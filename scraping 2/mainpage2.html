@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoFlow OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#03040A;--bg2:#05060E;--glass:rgba(255,255,255,0.03);--glass2:rgba(255,255,255,0.06);
+  --border:rgba(255,255,255,0.06);--border-hi:rgba(99,130,255,0.3);
+  --blue:#6382FF;--blue2:#8BA3FF;--cyan:#00E5FF;--violet:#9B6DFF;
+  --green:#00F5A0;--amber:#FFB84D;--rose:#FF5E7D;--text:#E8EDF8;
+  --muted:#4A5578;--muted2:#7A8AAA;
+  --sans:'Syne',sans-serif;--mono:'DM Mono',monospace;--serif:'Instrument Serif',serif;
+  --sb-w:68px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);overflow-x:hidden;cursor:default;}
+
+/* CANVAS */
+#canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.4;}
+.noise{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.022;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+
+/* SHELL */
+.shell{display:flex;min-height:100vh;position:relative;z-index:2;}
+
+/* ─── SIDEBAR ─── */
+.sb{width:var(--sb-w);background:rgba(5,6,14,.92);backdrop-filter:blur(20px);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:18px 0;position:fixed;top:0;left:0;bottom:0;z-index:100;gap:4px;transition:width .3s;}
+.sb-logo{width:38px;height:38px;margin-bottom:24px;cursor:pointer;background:linear-gradient(135deg,var(--blue),var(--violet));clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;font-size:16px;animation:logoglw 4s ease-in-out infinite;}
+@keyframes logoglw{0%,100%{box-shadow:0 0 20px rgba(99,130,255,.4);}50%{box-shadow:0 0 40px rgba(155,109,255,.6),0 0 80px rgba(99,130,255,.2);}}
+.nb{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;color:var(--muted2);border:1px solid transparent;transition:all .2s;position:relative;}
+.nb:hover{color:var(--text);background:var(--glass2);border-color:var(--border);}
+.nb.on{color:var(--blue2);background:rgba(99,130,255,.1);border-color:rgba(99,130,255,.2);}
+.nb.on::before{content:'';position:absolute;left:-1px;top:50%;transform:translateY(-50%);width:2px;height:20px;background:var(--blue);border-radius:0 1px 1px 0;box-shadow:0 0 8px var(--blue);}
+.nbadge{position:absolute;top:5px;right:5px;width:15px;height:15px;background:var(--rose);border-radius:50%;font-family:var(--mono);font-size:8px;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 8px var(--rose);}
+.sb-sep{width:24px;height:1px;background:var(--border);margin:6px 0;}
+.sb-dot{width:6px;height:6px;background:var(--green);border-radius:50%;box-shadow:0 0 10px var(--green);animation:pulse 2s ease-in-out infinite;margin-top:auto;margin-bottom:4px;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.8);}}
+
+/* ─── MAIN ─── */
+.main{flex:1;margin-left:var(--sb-w);display:flex;flex-direction:column;min-width:0;}
+
+/* ─── TOPBAR ─── */
+.tb{height:54px;background:rgba(3,4,10,.88);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,4vw,28px);position:sticky;top:0;z-index:50;gap:10px;}
+.tb-brand{font-family:var(--serif);font-size:clamp(16px,2.5vw,20px);color:var(--text);white-space:nowrap;}
+.tb-brand em{font-style:italic;color:var(--blue2);}
+.tb-sep{width:1px;height:14px;background:var(--border);margin:0 12px;flex-shrink:0;}
+.tb-pg{font-family:var(--mono);font-size:9px;color:var(--muted2);letter-spacing:3px;text-transform:uppercase;white-space:nowrap;}
+.tb-r{display:flex;align-items:center;gap:clamp(8px,2vw,18px);flex-wrap:nowrap;overflow:hidden;}
+.tb-pill{display:flex;align-items:center;gap:6px;background:rgba(0,245,160,.06);border:1px solid rgba(0,245,160,.15);padding:5px 10px;border-radius:20px;font-family:var(--mono);font-size:8px;color:var(--green);letter-spacing:2px;text-transform:uppercase;white-space:nowrap;}
+.tb-pill-d{width:5px;height:5px;background:var(--green);border-radius:50%;box-shadow:0 0 6px var(--green);animation:pulse 2s ease-in-out infinite;flex-shrink:0;}
+.tb-kv{font-family:var(--mono);font-size:12px;color:var(--muted2);white-space:nowrap;}
+.tb-kv b{color:var(--blue2);}
+#clk{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;white-space:nowrap;}
+@media(max-width:768px){.tb-kv,.tb-sep,.tb-pg,#clk{display:none;}.tb-pill span{display:none;}}
+
+/* PAGE SYSTEM */
+.ct{flex:1;}
+.pg{display:none;}
+.pg.on{display:block;animation:pgin .3s cubic-bezier(.4,0,.2,1);}
+@keyframes pgin{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* ═══ HERO ═══ */
+.hero{position:relative;min-height:clamp(500px,92vh,1000px);display:flex;align-items:center;overflow:hidden;}
+.hero-bg-grad{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 70% 50%, rgba(99,130,255,0.12) 0%, transparent 70%),radial-gradient(ellipse 40% 60% at 15% 80%, rgba(155,109,255,0.1) 0%, transparent 60%),radial-gradient(ellipse 30% 40% at 80% 10%, rgba(0,229,255,0.05) 0%, transparent 50%);}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(99,130,255,0.045) 1px, transparent 1px),linear-gradient(90deg, rgba(99,130,255,0.045) 1px, transparent 1px);background-size:clamp(40px,5vw,60px) clamp(40px,5vw,60px);animation:gridMove 24s linear infinite;}
+@keyframes gridMove{0%{transform:translateY(0);}100%{transform:translateY(60px);}}
+
+.hero-layout{position:relative;z-index:2;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;padding:60px clamp(20px,5vw,60px);}
+@media(max-width:900px){.hero-layout{grid-template-columns:1fr;padding:40px 20px;}.hero-right{display:none;}}
+@media(max-width:600px){.hero-layout{padding:30px 16px;}}
+
+.hero-content{animation:heroIn 1s cubic-bezier(.4,0,.2,1) forwards;}
+@keyframes heroIn{from{opacity:0;transform:translateY(40px);}to{opacity:1;transform:translateY(0);}}
+.hero-tag{font-family:var(--mono);font-size:10px;letter-spacing:5px;color:var(--blue);text-transform:uppercase;margin-bottom:22px;display:flex;align-items:center;gap:10px;}
+.hero-tag::before{content:'';display:inline-block;width:30px;height:1px;background:var(--blue);}
+.hero-tag::after{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--blue);animation:blink 2s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+.hero-title{font-family:var(--serif);font-size:clamp(42px,6.5vw,92px);line-height:1.0;letter-spacing:-2px;margin-bottom:20px;}
+.hero-title em{font-style:italic;color:var(--blue2);display:block;}
+.hero-title span{display:block;color:#fff;}
+.hero-offer{font-family:var(--mono);font-size:11px;color:var(--green);letter-spacing:2px;margin-bottom:28px;padding:10px 18px;border:1px solid rgba(0,245,160,.25);display:inline-block;background:rgba(0,245,160,.05);}
+.hero-desc{font-size:clamp(14px,1.6vw,16px);color:var(--muted2);line-height:1.8;margin-bottom:40px;max-width:480px;}
+.hero-btns{display:flex;gap:12px;flex-wrap:wrap;}
+
+/* ─── RIGHT PANEL ─── */
+.hero-right{animation:rightIn 1.2s cubic-bezier(.4,0,.2,1) .3s both;}
+@keyframes rightIn{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}
+.live-panel{background:rgba(5,6,18,.75);border:1px solid rgba(99,130,255,.15);backdrop-filter:blur(20px);overflow:hidden;}
+.lp-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:rgba(99,130,255,.04);}
+.lp-title{font-family:var(--mono);font-size:9px;letter-spacing:4px;color:var(--blue);text-transform:uppercase;}
+.lp-dot{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:8px;color:var(--green);}
+.lp-dot::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite;}
+.lp-stats{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--border);}
+.lp-stat{padding:16px 12px;border-right:1px solid var(--border);text-align:center;}
+.lp-stat:last-child{border-right:none;}
+.lp-num{font-family:var(--serif);font-size:clamp(28px,4vw,36px);line-height:1;margin-bottom:4px;}
+.lp-lbl{font-family:var(--mono);font-size:7px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+.lp-feed{padding:12px 16px;max-height:200px;overflow:hidden;position:relative;}
+.lp-feed::after{content:'';position:absolute;bottom:0;left:0;right:0;height:36px;background:linear-gradient(transparent,rgba(5,6,18,.95));pointer-events:none;}
+.feed-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.feed-item:last-child{border-bottom:none;}
+.feed-ico{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+.feed-meta{font-family:var(--mono);font-size:7px;color:var(--muted);letter-spacing:1px;margin-bottom:3px;text-transform:uppercase;}
+.feed-text{font-size:11px;color:var(--muted2);line-height:1.4;}
+.feed-badge{font-family:var(--mono);font-size:7px;padding:2px 6px;border-radius:3px;margin-left:auto;flex-shrink:0;margin-top:1px;}
+@keyframes feedSlide{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+.feed-new{animation:feedSlide .4s cubic-bezier(.4,0,.2,1);}
+.lp-chart{padding:12px 16px;border-top:1px solid var(--border);}
+.lp-chart-lbl{font-family:var(--mono);font-size:7px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;display:flex;justify-content:space-between;}
+.mini-bars{display:flex;align-items:flex-end;gap:3px;height:44px;}
+.mini-bar{flex:1;border-radius:2px 2px 0 0;min-height:4px;}
+
+/* ─── DATA NODE SVG ANIMATION ─── */
+.data-node-wrap{position:relative;display:flex;align-items:center;justify-content:center;}
+.data-node-wrap svg{overflow:visible;}
+
+/* ─── LOGO STRIP ─── */
+.logo-strip{overflow:hidden;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:16px 0;background:rgba(255,255,255,.01);}
+.logo-track{display:flex;gap:50px;animation:stripScroll 22s linear infinite;width:max-content;}
+@keyframes stripScroll{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.logo-item{font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.14);letter-spacing:4px;text-transform:uppercase;white-space:nowrap;display:flex;align-items:center;gap:10px;}
+.logo-item::before{content:'◈';color:rgba(99,130,255,.28);font-size:8px;}
+
+/* ─── METRICS BAND ─── */
+.metrics-band{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+@media(max-width:700px){.metrics-band{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:420px){.metrics-band{grid-template-columns:1fr;}}
+.met-cell{padding:clamp(24px,3vw,40px) clamp(16px,2.5vw,32px);border-right:1px solid var(--border);position:relative;overflow:hidden;transition:background .3s;}
+.met-cell:nth-child(2n){border-right:none;}
+@media(min-width:701px){.met-cell{border-right:1px solid var(--border);}.met-cell:last-child{border-right:none;}}
+.met-cell:hover{background:rgba(99,130,255,.03);}
+.met-num{font-family:var(--serif);font-size:clamp(36px,5vw,56px);letter-spacing:-2px;line-height:1;margin-bottom:6px;transition:color .5s;}
+.met-lbl{font-family:var(--mono);font-size:8px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:12px;}
+.met-spark{display:flex;align-items:flex-end;gap:2px;height:28px;}
+.met-bar{flex:1;border-radius:1px;opacity:.65;transition:height .8s cubic-bezier(.4,0,.2,1);}
+.met-trend{font-family:var(--mono);font-size:9px;color:var(--green);margin-top:8px;}
+
+/* ─── SCROLLING CARDS ─── */
+.cards-outer{overflow:hidden;margin:0;padding:0 clamp(20px,5vw,60px);position:relative;}
+.cards-outer::before,.cards-outer::after{content:'';position:absolute;top:0;bottom:0;width:60px;z-index:2;pointer-events:none;}
+.cards-outer::before{left:0;background:linear-gradient(90deg,var(--bg),transparent);}
+.cards-outer::after{right:0;background:linear-gradient(-90deg,var(--bg),transparent);}
+.cards-track{display:flex;gap:16px;animation:cardsScroll 32s linear infinite;width:max-content;padding-bottom:4px;}
+.cards-track:hover{animation-play-state:paused;}
+@keyframes cardsScroll{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.cards-track-rev{display:flex;gap:16px;animation:cardsScrollRev 38s linear infinite;width:max-content;padding-bottom:4px;}
+.cards-track-rev:hover{animation-play-state:paused;}
+@keyframes cardsScrollRev{0%{transform:translateX(-50%);}100%{transform:translateX(0);}}
+
+.cat-card{width:clamp(220px,22vw,270px);height:340px;flex-shrink:0;position:relative;overflow:hidden;cursor:pointer;border:1px solid var(--border);transition:all .45s cubic-bezier(.4,0,.2,1);background:rgba(5,6,18,.6);backdrop-filter:blur(12px);}
+.cat-card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.035) 0%,transparent 50%);pointer-events:none;z-index:3;}
+.cat-card::before{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent);transition:left .6s cubic-bezier(.4,0,.2,1);z-index:4;pointer-events:none;}
+.cat-card:hover::before{left:150%;}
+.cat-card:hover{border-color:rgba(99,130,255,.5);transform:translateY(-10px) scale(1.02);box-shadow:0 30px 70px rgba(0,0,0,.55),0 0 40px rgba(99,130,255,.07),inset 0 1px 0 rgba(255,255,255,.07);}
+.cat-card-sm{height:260px;}
+.card-bg-c{position:absolute;inset:0;transition:transform .7s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;justify-content:center;}
+.cat-card:hover .card-bg-c{transform:scale(1.08);}
+.card-overlay-c{position:absolute;inset:0;background:linear-gradient(to top,rgba(3,4,10,.97) 0%,rgba(3,4,10,.5) 55%,rgba(3,4,10,.1) 100%);}
+.card-content-c{position:absolute;bottom:0;left:0;right:0;padding:22px;z-index:2;}
+.card-badge-c{position:absolute;top:16px;right:16px;background:rgba(99,130,255,.15);border:1px solid rgba(99,130,255,.35);color:var(--blue2);font-family:var(--mono);font-size:7px;letter-spacing:1px;padding:4px 8px;text-transform:uppercase;z-index:5;backdrop-filter:blur(8px);}
+.card-number{position:absolute;top:16px;left:18px;font-family:var(--mono);font-size:8px;letter-spacing:2px;color:rgba(255,255,255,.18);z-index:5;}
+.card-category-c{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--blue);text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.card-category-c::before{content:'';width:10px;height:1px;background:currentColor;display:inline-block;}
+.card-title-c{font-family:var(--serif);font-size:22px;line-height:1.15;letter-spacing:-.5px;margin-bottom:8px;color:#fff;}
+.card-desc-c{font-size:11px;color:rgba(255,255,255,.48);line-height:1.65;margin-bottom:14px;}
+.card-cta-c{font-family:var(--mono);font-size:8px;letter-spacing:2px;color:var(--blue2);text-transform:uppercase;display:flex;align-items:center;gap:8px;transition:all .3s;}
+.cat-card:hover .card-cta-c{gap:14px;}
+.card-cta-c::after{content:'→';font-size:12px;}
+.card-stat-bar{display:flex;gap:4px;margin-bottom:12px;}
+.card-stat-pip{height:3px;border-radius:2px;flex:1;background:rgba(255,255,255,.07);}
+.card-stat-pip.filled{background:currentColor;opacity:.65;}
+
+/* ─── FEATURES STRIP ─── */
+.feat-strip{background:rgba(255,255,255,.008);border-top:1px solid var(--border);border-bottom:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);}
+@media(max-width:700px){.feat-strip{grid-template-columns:1fr;}}
+.feat-item{padding:clamp(28px,4vw,44px) clamp(20px,3vw,36px);border-right:1px solid var(--border);transition:all .35s;cursor:default;position:relative;overflow:hidden;}
+.feat-item:last-child{border-right:none;}
+.feat-item::before{content:'';position:absolute;bottom:-40px;right:-40px;width:100px;height:100px;border-radius:50%;opacity:0;transition:opacity .4s;filter:blur(30px);}
+.feat-item:nth-child(1)::before{background:var(--blue);}
+.feat-item:nth-child(2)::before{background:var(--green);}
+.feat-item:nth-child(3)::before{background:var(--violet);}
+.feat-item:hover::before{opacity:.05;}
+.feat-item:hover{background:rgba(99,130,255,.025);transform:translateY(-2px);}
+.feat-icon{width:48px;height:48px;background:rgba(99,130,255,.07);border:1px solid rgba(99,130,255,.18);display:flex;align-items:center;justify-content:center;margin-bottom:18px;font-size:20px;}
+.feat-title{font-size:17px;font-weight:700;margin-bottom:9px;color:#fff;}
+.feat-desc{font-size:13px;color:var(--muted2);line-height:1.8;}
+
+/* ─── PIPELINE FLOW ─── */
+.pipeline-section{padding:clamp(50px,6vw,80px) clamp(20px,5vw,60px);background:rgba(99,130,255,.015);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.pipeline-flow{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-top:50px;position:relative;}
+@media(max-width:900px){.pipeline-flow{grid-template-columns:repeat(3,1fr);gap:20px;}}
+@media(max-width:600px){.pipeline-flow{grid-template-columns:1fr 1fr;}}
+.pipeline-flow::before{content:'';position:absolute;top:40px;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,rgba(99,130,255,.25),rgba(0,245,160,.25),rgba(99,130,255,.25),transparent);z-index:0;}
+.pf-step{display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 12px;position:relative;z-index:1;}
+.pf-icon{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:18px;border:1px solid rgba(99,130,255,.2);background:rgba(99,130,255,.06);position:relative;}
+.pf-icon::after{content:'';position:absolute;inset:-6px;border-radius:50%;border:1px dashed rgba(99,130,255,.12);animation:iconSpin 20s linear infinite;}
+@keyframes iconSpin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+.pf-num{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--blue);text-transform:uppercase;margin-bottom:7px;}
+.pf-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:5px;}
+.pf-desc{font-size:11px;color:var(--muted2);line-height:1.6;}
+.pf-metric{font-family:var(--mono);font-size:9px;color:var(--green);margin-top:10px;padding:3px 8px;border:1px solid rgba(0,245,160,.2);background:rgba(0,245,160,.04);}
+
+/* ─── INFINITE MARQUEE (Pipeline Steps + Testimonials) ─── */
+.marquee-wrap{overflow:hidden;position:relative;}
+.marquee-wrap::before,.marquee-wrap::after{content:'';position:absolute;top:0;bottom:0;width:80px;z-index:2;pointer-events:none;}
+.marquee-wrap::before{left:0;background:linear-gradient(90deg,var(--bg),transparent);}
+.marquee-wrap::after{right:0;background:linear-gradient(-90deg,var(--bg),transparent);}
+.marquee-track{display:flex;gap:20px;animation:marqueeRTL 36s linear infinite;width:max-content;}
+.marquee-track:hover{animation-play-state:paused;}
+@keyframes marqueeRTL{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+
+/* ─── WORKFLOW SECTION ─── */
+.workflow-section{padding:clamp(50px,6vw,80px) clamp(20px,5vw,60px);}
+.workflow-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px;align-items:start;}
+@media(max-width:800px){.workflow-grid{grid-template-columns:1fr;}}
+.wf-visual{position:relative;height:320px;}
+.wf-node{position:absolute;display:flex;align-items:center;gap:10px;background:rgba(5,6,18,.85);border:1px solid rgba(99,130,255,.18);padding:11px 16px;backdrop-filter:blur(10px);transition:all .3s;}
+.wf-node:hover{border-color:rgba(99,130,255,.5);transform:scale(1.04);}
+.wf-node-ico{width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;border-radius:6px;flex-shrink:0;}
+.wf-node-txt{font-size:12px;color:var(--text);font-weight:600;}
+.wf-node-sub{font-family:var(--mono);font-size:7px;color:var(--muted);letter-spacing:1px;margin-top:1px;}
+@keyframes floatY{0%,100%{transform:translateY(0px);}50%{transform:translateY(-8px);}}
+.float-icon{position:absolute;font-size:22px;opacity:.12;animation:floatY var(--fd,6s) ease-in-out infinite;animation-delay:var(--fdel,0s);}
+.wf-items{display:flex;flex-direction:column;gap:16px;}
+.wf-item{display:flex;align-items:flex-start;gap:14px;padding:18px;background:var(--glass);border:1px solid var(--border);transition:all .3s;}
+.wf-item:hover{border-color:rgba(99,130,255,.25);transform:translateX(6px);}
+.wf-item-num{font-family:var(--mono);font-size:11px;color:var(--blue);min-width:26px;}
+.wf-item-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.wf-item-desc{font-size:12px;color:var(--muted2);line-height:1.6;}
+
+/* ─── OFFER BANNER ─── */
+.offer-banner{background:linear-gradient(135deg,rgba(99,130,255,.07) 0%,rgba(155,109,255,.06) 100%);border:1px solid rgba(99,130,255,.16);margin:0 clamp(16px,5vw,60px);padding:clamp(32px,5vw,56px) clamp(24px,5vw,60px);display:flex;align-items:center;justify-content:space-between;gap:24px;position:relative;overflow:hidden;flex-wrap:wrap;}
+.offer-banner::before{content:'';position:absolute;top:-50%;right:-10%;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(99,130,255,.06) 0%,transparent 70%);pointer-events:none;}
+.offer-pct{font-family:var(--serif);font-size:clamp(60px,8vw,96px);letter-spacing:-4px;line-height:1;background:linear-gradient(135deg,var(--blue2),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;flex-shrink:0;}
+.offer-text-big{font-family:var(--serif);font-size:clamp(22px,3.5vw,36px);letter-spacing:-1px;margin-bottom:8px;}
+.offer-text-big em{font-style:italic;color:var(--blue2);}
+.offer-sub{font-size:13px;color:var(--muted2);margin-bottom:24px;line-height:1.7;max-width:500px;}
+
+/* ─── ACTIVE PIPELINE (dynamic) ─── */
+.pipeline-live-box{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+@media(max-width:600px){.pipeline-live-box{grid-template-columns:1fr;}}
+.plb-stat{background:var(--glass);border:1px solid var(--border);padding:20px;transition:all .3s;}
+.plb-stat:hover{border-color:var(--border-hi);}
+.plb-num{font-family:var(--serif);font-size:40px;line-height:1;letter-spacing:-1px;margin-bottom:4px;transition:all .5s cubic-bezier(.4,0,.2,1);}
+.plb-label{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.plb-change{font-family:var(--mono);font-size:9px;color:var(--green);}
+.plb-bar-track{height:2px;background:rgba(255,255,255,.04);margin-top:10px;}
+.plb-bar-fill{height:100%;transition:width 1s cubic-bezier(.4,0,.2,1);}
+
+/* ─── TESTIMONIALS INFINITE ─── */
+.testi-section{padding:clamp(50px,6vw,80px) 0 0;}
+.testi-section-hdr{padding:0 clamp(20px,5vw,60px);margin-bottom:32px;}
+.testi-card{width:clamp(280px,32vw,380px);flex-shrink:0;background:var(--glass);border:1px solid var(--border);padding:26px;transition:all .3s;position:relative;overflow:hidden;}
+.testi-card::before{content:'"';position:absolute;top:-10px;right:18px;font-family:var(--serif);font-size:110px;color:rgba(99,130,255,.05);line-height:1;pointer-events:none;}
+.testi-card:hover{border-color:rgba(99,130,255,.2);transform:translateY(-3px);}
+.testi-stars{color:var(--amber);font-size:11px;letter-spacing:3px;margin-bottom:14px;}
+.testi-text{font-size:13px;color:rgba(255,255,255,.5);line-height:1.75;margin-bottom:20px;font-style:italic;}
+.testi-author{font-family:var(--mono);font-size:8px;letter-spacing:2px;color:var(--blue);text-transform:uppercase;}
+.testi-result{display:inline-block;font-family:var(--mono);font-size:9px;color:var(--green);padding:3px 8px;border:1px solid rgba(0,245,160,.18);background:rgba(0,245,160,.04);margin-top:10px;}
+
+/* ─── SECTION HEADERS ─── */
+.section-hdr{padding:clamp(40px,5vw,60px) clamp(20px,5vw,60px) 0;}
+.section-tag2{font-family:var(--mono);font-size:8px;letter-spacing:5px;color:var(--blue);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.section-tag2::before{content:'';width:20px;height:1px;background:var(--blue);display:inline-block;}
+.section-title2{font-family:var(--serif);font-size:clamp(26px,4vw,48px);letter-spacing:-1px;margin-bottom:6px;}
+.section-title2 em{font-style:italic;color:var(--blue2);}
+.section-sub2{font-size:14px;color:var(--muted2);line-height:1.7;max-width:400px;margin-bottom:36px;}
+
+/* ─── FOOTER ─── */
+.footer-strip{border-top:1px solid var(--border);padding:26px clamp(20px,5vw,60px);display:flex;align-items:center;justify-content:space-between;margin-top:50px;flex-wrap:wrap;gap:16px;}
+.footer-brand{font-family:var(--serif);font-size:20px;color:var(--text);}
+.footer-brand em{font-style:italic;color:var(--blue2);}
+.footer-links{display:flex;gap:20px;flex-wrap:wrap;}
+.footer-link{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;cursor:pointer;transition:color .2s;}
+.footer-link:hover{color:var(--blue2);}
+.footer-status{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:9px;color:var(--green);letter-spacing:2px;text-transform:uppercase;}
+.footer-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite;}
+
+/* ─── BUTTONS ─── */
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:clamp(10px,1.5vw,14px) clamp(18px,3vw,30px);cursor:pointer;border:none;transition:all .22s;white-space:nowrap;}
+.btn-p{background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;box-shadow:0 4px 24px rgba(99,130,255,.22);}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 8px 40px rgba(99,130,255,.42);}
+.btn-g{background:transparent;color:var(--muted2);border:1px solid var(--border-hi);}
+.btn-g:hover{color:var(--text);border-color:rgba(99,130,255,.5);background:rgba(99,130,255,.05);}
+
+/* ─── INNER PAGES ─── */
+.inner-pg{padding:clamp(16px,3vw,28px);}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap;}
+.ph-eye{font-family:var(--mono);font-size:8px;letter-spacing:5px;color:var(--blue);text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+.ph-eye::before{content:'';display:inline-block;width:20px;height:1px;background:var(--blue);}
+.ph-title{font-family:var(--serif);font-size:clamp(28px,4vw,38px);color:var(--text);line-height:1.1;letter-spacing:-.5px;}
+.ph-title em{font-style:italic;color:var(--blue2);}
+.ph-desc{font-size:13px;color:var(--muted2);margin-top:6px;max-width:440px;line-height:1.7;}
+.gl{height:1px;background:linear-gradient(90deg,transparent,var(--blue),transparent);margin:0 0 18px;opacity:.3;}
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+@media(max-width:800px){.sg{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:480px){.sg{grid-template-columns:1fr;}}
+.sc{background:var(--glass);border:1px solid var(--border);padding:20px;position:relative;overflow:hidden;transition:all .3s;cursor:default;}
+.sc:hover{border-color:var(--border-hi);transform:translateY(-2px);}
+.sc-lbl{font-family:var(--mono);font-size:8px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:12px;}
+.sc-val{font-family:var(--serif);font-size:clamp(28px,4vw,42px);line-height:1;letter-spacing:-1px;margin-bottom:8px;}
+.sc-sub{font-family:var(--mono);font-size:9px;color:var(--muted);}
+.sc-trend{font-family:var(--mono);font-size:9px;color:var(--green);margin-top:4px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:700px){.g2{grid-template-columns:1fr;}}
+.g60{display:grid;grid-template-columns:1.6fr 1fr;gap:14px;}
+@media(max-width:700px){.g60{grid-template-columns:1fr;}}
+.card{background:var(--glass);border:1px solid var(--border);margin-bottom:14px;transition:border-color .2s;}
+.card:hover{border-color:rgba(99,130,255,.1);}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px;}
+.ct2{font-family:var(--mono);font-size:8px;letter-spacing:3px;color:var(--muted2);text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+.cd{width:5px;height:5px;border-radius:50%;box-shadow:0 0 6px currentColor;}
+.cb{padding:16px;}
+.cbr{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.cbr:last-child{margin-bottom:0;}
+.cl{font-size:12px;color:var(--muted2);width:clamp(120px,15vw,200px);flex-shrink:0;}
+.ck{flex:1;height:3px;background:rgba(255,255,255,.04);border-radius:2px;overflow:hidden;}
+.cf{height:100%;border-radius:2px;transition:width 1s cubic-bezier(.4,0,.2,1);}
+.cp{font-family:var(--mono);font-size:10px;color:var(--blue2);min-width:30px;text-align:right;}
+.tr2{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted2);}
+.tr2:last-child{border-bottom:none;}
+.tg{width:34px;height:18px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;cursor:pointer;position:relative;transition:all .25s;flex-shrink:0;}
+.tg.on{background:linear-gradient(135deg,var(--blue),var(--violet));border-color:var(--blue);box-shadow:0 0 10px rgba(99,130,255,.28);}
+.tg::after{content:'';position:absolute;width:12px;height:12px;background:#fff;border-radius:50%;top:2px;left:2px;transition:left .25s cubic-bezier(.4,0,.2,1);box-shadow:0 1px 4px rgba(0,0,0,.4);}
+.tg.on::after{left:18px;}
+.tw{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead tr{border-bottom:1px solid var(--border);}
+th{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;text-align:left;padding:10px 12px;white-space:nowrap;}
+td{padding:12px;font-size:12px;border-bottom:1px solid rgba(99,130,255,.03);vertical-align:middle;}
+tbody tr{transition:background .15s;}
+tbody tr:hover td{background:rgba(99,130,255,.03);}
+.tag{display:inline-flex;align-items:center;gap:3px;font-family:var(--mono);font-size:7px;padding:3px 8px;letter-spacing:1.5px;text-transform:uppercase;font-weight:500;white-space:nowrap;}
+.t-b{background:rgba(99,130,255,.1);color:var(--blue2);border:1px solid rgba(99,130,255,.2);}
+.t-g{background:rgba(0,245,160,.08);color:var(--green);border:1px solid rgba(0,245,160,.2);}
+.t-r{background:rgba(255,94,125,.1);color:#FF8FA8;border:1px solid rgba(255,94,125,.2);}
+.t-a{background:rgba(255,184,77,.1);color:var(--amber);border:1px solid rgba(255,184,77,.2);}
+.t-v{background:rgba(155,109,255,.1);color:#C4A3FF;border:1px solid rgba(155,109,255,.2);}
+.term{background:#010204;border:1px solid rgba(255,255,255,.05);padding:14px;font-family:var(--mono);font-size:11px;line-height:1.9;max-height:180px;overflow-y:auto;color:rgba(255,255,255,.42);}
+.t-bl{color:var(--blue2);}.t-gn{color:var(--green);}.t-am{color:var(--amber);}.t-mt{color:var(--muted2);}.t-wh{color:var(--text);}.t-rs{color:#FF8FA8;}
+.fg{margin-bottom:12px;}
+.fl{display:block;font-family:var(--mono);font-size:8px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:7px;}
+.fi,.fs{width:100%;background:rgba(255,255,255,.02);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:10px 12px;outline:none;transition:all .2s;appearance:none;}
+.fi:focus,.fs:focus{border-color:rgba(99,130,255,.4);background:rgba(99,130,255,.02);}
+.fi::placeholder{color:var(--muted);}
+.pw{margin:8px 0;}
+.pl{display:flex;justify-content:space-between;font-family:var(--mono);font-size:8px;color:var(--muted);margin-bottom:5px;letter-spacing:1px;}
+.pt{height:2px;background:rgba(255,255,255,.04);border-radius:1px;overflow:hidden;}
+.pf{height:100%;background:linear-gradient(90deg,var(--blue),var(--violet));border-radius:1px;transition:width .8s cubic-bezier(.4,0,.2,1);}
+.sr-w{position:relative;width:100px;height:100px;margin:0 auto 12px;}
+.sr-w svg{transform:rotate(-90deg);}
+.sr-v{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.sr-n{font-family:var(--serif);font-size:30px;color:var(--amber);line-height:1;}
+.sr-s{font-family:var(--mono);font-size:7px;color:var(--muted);letter-spacing:2px;margin-top:2px;}
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:18px;}
+.tab{font-family:var(--mono);font-size:8px;letter-spacing:2px;text-transform:uppercase;padding:10px 14px;cursor:pointer;color:var(--muted);border-bottom:1px solid transparent;margin-bottom:-1px;transition:all .2s;}
+.tab:hover{color:var(--muted2);}
+.tab.on{color:var(--blue2);border-bottom-color:var(--blue);}
+.tp{display:none;}.tp.on{display:block;}
+.roi-box{background:linear-gradient(135deg,rgba(99,130,255,.05),rgba(155,109,255,.04));border:1px solid rgba(99,130,255,.13);padding:22px;text-align:center;margin-top:14px;}
+.roi-big{font-family:var(--serif);font-size:clamp(40px,5vw,60px);color:var(--green);letter-spacing:-2px;line-height:1;margin-bottom:4px;}
+.roi-lbl{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:16px;}
+.roi-g{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.roi-m{background:rgba(255,255,255,.02);border:1px solid var(--border);padding:12px;text-align:center;}
+.roi-mn{font-family:var(--serif);font-size:22px;color:var(--blue2);}
+.roi-ml{font-family:var(--mono);font-size:7px;color:var(--muted);letter-spacing:1px;margin-top:3px;}
+.sld-r{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);}
+.sld-l{font-size:12px;color:var(--muted2);flex:1;}
+.sld-v{font-family:var(--mono);font-size:10px;color:var(--blue2);min-width:55px;text-align:right;}
+input[type=range]{width:100px;accent-color:var(--blue);cursor:pointer;}
+.ii{background:var(--glass);border:1px solid var(--border);border-left:2px solid var(--amber);padding:14px 15px;margin-bottom:10px;display:flex;gap:12px;cursor:pointer;transition:all .2s;flex-wrap:wrap;}
+.ii:hover{border-color:rgba(99,130,255,.2);border-left-color:var(--blue);transform:translateX(3px);}
+.ii.hot{border-left-color:var(--rose);}
+.ii-ico{font-size:18px;flex-shrink:0;margin-top:1px;}
+.ii-src{font-family:var(--mono);font-size:7px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+.ii-txt{font-size:12px;color:var(--text);line-height:1.5;margin-bottom:5px;}
+.ii-p{font-family:var(--mono);font-size:8px;color:var(--amber);line-height:1.4;}
+.dg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;}
+@media(max-width:700px){.dg{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:480px){.dg{grid-template-columns:1fr;}}
+.dc{background:var(--glass);border:1px solid var(--border);padding:20px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;}
+.dc:hover{border-color:var(--border-hi);transform:translateY(-3px);}
+.de{font-size:26px;margin-bottom:10px;}
+.dt{font-size:14px;font-weight:600;color:var(--text);margin-bottom:5px;}
+.dd{font-size:11px;color:var(--muted2);line-height:1.5;margin-bottom:10px;}
+.ep{background:rgba(255,255,255,.012);border:1px solid var(--border);padding:16px;}
+.ef{display:flex;gap:10px;font-family:var(--mono);font-size:8px;padding:6px 0;border-bottom:1px solid var(--border);letter-spacing:1px;}
+.ek{color:var(--blue);min-width:40px;text-transform:uppercase;}
+.ev{color:var(--muted2);}
+.eb{padding-top:14px;font-size:13px;color:var(--muted2);line-height:1.8;}
+.ehl{color:var(--blue2);font-weight:500;}
+.egp{color:var(--rose);font-weight:500;}
+.lb{background:rgba(255,255,255,.012);border:1px solid var(--border);padding:18px;font-size:13px;line-height:1.8;color:var(--muted2);white-space:pre-wrap;}
+.lts{color:var(--blue);font-family:var(--mono);font-size:9px;}
+.nf{position:fixed;bottom:22px;right:22px;background:var(--glass2);border:1px solid rgba(99,130,255,.24);backdrop-filter:blur(20px);box-shadow:0 0 40px rgba(99,130,255,.08),0 20px 60px rgba(0,0,0,.55);padding:11px 16px;font-family:var(--mono);font-size:10px;color:var(--text);max-width:280px;z-index:999;display:none;letter-spacing:.5px;}
+.nf.show{display:block;animation:nfin .3s cubic-bezier(.4,0,.2,1);}
+@keyframes nfin{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.rv{opacity:0;transform:translateY(28px);transition:opacity .65s cubic-bezier(.4,0,.2,1),transform .65s cubic-bezier(.4,0,.2,1);}
+.rv.vis{opacity:1;transform:translateY(0);}
+.cnt{display:inline-block;}
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-thumb{background:rgba(99,130,255,.18);border-radius:2px;}
+
+/* ─── SCROLL PROGRESS ─── */
+.scroll-prog{position:fixed;top:0;left:var(--sb-w);right:0;height:2px;background:transparent;z-index:200;}
+.scroll-prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--violet));width:0%;transition:width .1s;}
+
+/* ─── DATA NODE PULSE (replaces empty hero right on small screens) ─── */
+@keyframes nodeRing{0%{r:12;opacity:.8;}100%{r:60;opacity:0;}}
+@keyframes nodeDash{to{stroke-dashoffset:-60;}}
+@keyframes orbitA{0%{transform:rotate(0deg) translateX(80px) rotate(0deg);}100%{transform:rotate(360deg) translateX(80px) rotate(-360deg);}}
+@keyframes orbitB{0%{transform:rotate(120deg) translateX(110px) rotate(-120deg);}100%{transform:rotate(480deg) translateX(110px) rotate(-480deg);}}
+@keyframes orbitC{0%{transform:rotate(240deg) translateX(65px) rotate(-240deg);}100%{transform:rotate(600deg) translateX(65px) rotate(-600deg);}}
+@keyframes pulseNode{0%,100%{r:6;}50%{r:9;}}
+
+/* ─── SMOOTH SCROLL BEHAVIOR FOR CARDS ─── */
+@media(max-width:600px){
+  .cards-outer{padding:0 10px;}
+  .cat-card{width:220px;}
+}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div class="noise"></div>
+<div class="scroll-prog"><div class="scroll-prog-fill" id="spfill"></div></div>
+
+<div class="shell">
+<!-- SIDEBAR -->
+<aside class="sb">
+  <div class="sb-logo">⬡</div>
+  <div class="nb on" onclick="nav(this,'ov')" title="Overview">◈</div>
+  <div class="nb" onclick="nav(this,'sc')" title="Lead Scraper">◉<div class="nbadge">53</div></div>
+  <div class="nb" onclick="nav(this,'au')" title="Auditor">◎</div>
+  <div class="nb" onclick="nav(this,'ou')" title="Outreach">▷</div>
+  <div class="sb-sep"></div>
+  <div class="nb" onclick="nav(this,'dm')" title="Demo Builder">◫</div>
+  <div class="nb" onclick="nav(this,'cr')" title="CRM">⊞</div>
+  <div class="nb" onclick="nav(this,'in')" title="Intent Signals">◐<div class="nbadge">12</div></div>
+  <div class="nb" onclick="nav(this,'as')" title="Proof Assets">◻</div>
+  <div class="sb-dot"></div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="tb">
+    <div style="display:flex;align-items:center;min-width:0;">
+      <div class="tb-brand">AutoFlow <em>OS</em></div>
+      <div class="tb-sep"></div>
+      <div class="tb-pg" id="tbpg">Overview</div>
+    </div>
+    <div class="tb-r">
+      <div class="tb-pill"><div class="tb-pill-d"></div><span>All Systems Online</span></div>
+      <div class="tb-kv">Pipeline <b id="tb-pipe">$32,400</b></div>
+      <div class="tb-kv">Reply <b>4.8%</b></div>
+      <div id="clk"></div>
+    </div>
+  </div>
+
+  <div class="ct">
+  <!-- ══ OVERVIEW ══ -->
+  <div class="pg on" id="pg-ov">
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-bg-grad"></div>
+      <div class="hero-grid"></div>
+      <div class="hero-layout">
+        <!-- LEFT -->
+        <div class="hero-content">
+          <div class="hero-tag">Intelligence Layer · AutoFlow OS</div>
+          <h1 class="hero-title">
+            <span>Real-Time Sales</span>
+            <em>Intelligence!</em>
+          </h1>
+          <div class="hero-offer">◈ 7 Systems Active — Pipeline $32,400</div>
+          <p class="hero-desc">Scrape leads, audit sites, write personalized outreach, deploy demos, and close deals — fully automated across every channel.</p>
+          <div class="hero-btns">
+            <button class="btn btn-p" onclick="sn('Full pipeline triggered. ETA: 18 min.')">▶ Run Pipeline</button>
+            <button class="btn btn-g" onclick="sn('Syncing all data sources...')">↻ Sync All</button>
+          </div>
+        </div>
+
+        <!-- RIGHT — Live Intelligence Panel -->
+        <div class="hero-right">
+          <div class="live-panel">
+            <div class="lp-header">
+              <div class="lp-title">Live Intelligence Feed</div>
+              <div class="lp-dot">Broadcasting</div>
+            </div>
+            <div class="lp-stats">
+              <div class="lp-stat">
+                <div class="lp-num" style="color:var(--blue2)"><span class="cnt" id="hero-leads" data-to="53">0</span></div>
+                <div class="lp-lbl">Leads</div>
+              </div>
+              <div class="lp-stat">
+                <div class="lp-num" style="color:var(--rose)"><span class="cnt" id="hero-hot" data-to="28">0</span></div>
+                <div class="lp-lbl">Hot</div>
+              </div>
+              <div class="lp-stat">
+                <div class="lp-num" style="color:var(--green)"><span class="cnt" id="hero-calls" data-to="18">0</span></div>
+                <div class="lp-lbl">Calls</div>
+              </div>
+            </div>
+            <div class="lp-feed" id="liveFeed">
+              <div class="feed-item">
+                <div class="feed-ico" style="background:rgba(255,94,125,.1);border:1px solid rgba(255,94,125,.2);color:var(--rose);">🔥</div>
+                <div style="flex:1;"><div class="feed-meta">Indeed · 2min ago</div><div class="feed-text">Sunrise HVAC — hiring receptionist</div></div>
+                <div class="feed-badge" style="background:rgba(255,94,125,.1);color:var(--rose);border:1px solid rgba(255,94,125,.2);">HOT</div>
+              </div>
+              <div class="feed-item">
+                <div class="feed-ico" style="background:rgba(0,245,160,.06);border:1px solid rgba(0,245,160,.2);color:var(--green);">⭐</div>
+                <div style="flex:1;"><div class="feed-meta">CRM · 8min ago</div><div class="feed-text">Reliable AC — "What does it cost?"</div></div>
+                <div class="feed-badge" style="background:rgba(0,245,160,.08);color:var(--green);border:1px solid rgba(0,245,160,.2);">REPLY</div>
+              </div>
+              <div class="feed-item">
+                <div class="feed-ico" style="background:rgba(99,130,255,.1);border:1px solid rgba(99,130,255,.2);color:var(--blue2);">📞</div>
+                <div style="flex:1;"><div class="feed-meta">Demo · 15min ago</div><div class="feed-text">AI Receptionist deployed — Flow-Tech AC</div></div>
+                <div class="feed-badge" style="background:rgba(99,130,255,.12);color:var(--blue2);border:1px solid rgba(99,130,255,.2);">LIVE</div>
+              </div>
+            </div>
+            <div class="lp-chart">
+              <div class="lp-chart-lbl"><span>Pipeline / 7 days</span><span style="color:var(--green);">↑ 34%</span></div>
+              <div class="mini-bars" id="heroChart"></div>
+            </div>
+          </div>
+          <!-- Quick stats below panel -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+            <div style="background:rgba(0,245,160,.04);border:1px solid rgba(0,245,160,.14);padding:13px 16px;display:flex;justify-content:space-between;align-items:center;">
+              <div><div style="font-family:var(--mono);font-size:7px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Reply Rate</div><div style="font-family:var(--serif);font-size:26px;color:var(--green);">4.8%</div></div>
+              <div style="font-family:var(--mono);font-size:8px;color:rgba(0,245,160,.4);">↑ 2× avg</div>
+            </div>
+            <div style="background:rgba(155,109,255,.04);border:1px solid rgba(155,109,255,.14);padding:13px 16px;display:flex;justify-content:space-between;align-items:center;">
+              <div><div style="font-family:var(--mono);font-size:7px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Pipeline</div><div style="font-family:var(--serif);font-size:26px;color:#C4A3FF;" id="hero-pipe-val">$32K</div></div>
+              <div style="font-family:var(--mono);font-size:8px;color:rgba(155,109,255,.4);">active</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOGO STRIP -->
+    <div class="logo-strip">
+      <div class="logo-track">
+        <div class="logo-item">Lead Scraper</div><div class="logo-item">Site Auditor</div><div class="logo-item">Outreach Engine</div><div class="logo-item">Demo Builder</div><div class="logo-item">CRM Pipeline</div><div class="logo-item">Intent Signals</div><div class="logo-item">Proof Assets</div><div class="logo-item">AI Receptionist</div>
+        <div class="logo-item">Lead Scraper</div><div class="logo-item">Site Auditor</div><div class="logo-item">Outreach Engine</div><div class="logo-item">Demo Builder</div><div class="logo-item">CRM Pipeline</div><div class="logo-item">Intent Signals</div><div class="logo-item">Proof Assets</div><div class="logo-item">AI Receptionist</div>
+      </div>
+    </div>
+
+    <!-- LIVE METRICS BAND (scroll-triggered counters) -->
+    <div class="metrics-band" id="metricsBand">
+      <div class="met-cell">
+        <div class="met-lbl">Leads Scraped</div>
+        <div class="met-num" style="color:var(--blue2)"><span class="cnt" id="mb-leads" data-to="53" data-live="leads">0</span></div>
+        <div class="mini-bars" id="mb1"></div>
+        <div class="met-trend" id="mt-leads">↑ 12 new today</div>
+      </div>
+      <div class="met-cell">
+        <div class="met-lbl">Hot Prospects</div>
+        <div class="met-num" style="color:var(--rose)"><span class="cnt" id="mb-hot" data-to="28" data-live="hot">0</span></div>
+        <div class="mini-bars" id="mb2"></div>
+        <div class="met-trend">↑ 4 since yesterday</div>
+      </div>
+      <div class="met-cell">
+        <div class="met-lbl">Calls Booked</div>
+        <div class="met-num" style="color:var(--green)"><span class="cnt" id="mb-calls" data-to="18">0</span></div>
+        <div class="mini-bars" id="mb3"></div>
+        <div class="met-trend">↑ 3 today</div>
+      </div>
+      <div class="met-cell">
+        <div class="met-lbl">Active Pipeline</div>
+        <div class="met-num" style="color:#C4A3FF;" id="mb-pipe">$32K</div>
+        <div class="mini-bars" id="mb4"></div>
+        <div class="met-trend" id="mt-pipe">↑ 34% this week</div>
+      </div>
+    </div>
+
+    <!-- SCROLLING CARDS (7 modules) -->
+    <section style="padding:60px 0 0;">
+      <div style="padding:0 clamp(20px,5vw,60px);margin-bottom:30px;">
+        <div class="section-tag2">Automation Systems</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h2 class="section-title2">7 Active <em>Modules</em></h2>
+            <p class="section-sub2">Every system running in sync. Hover to pause.</p>
+          </div>
+        </div>
+      </div>
+      <div class="cards-outer">
+        <div class="cards-track">
+          <div class="cat-card" onclick="nav(document.querySelectorAll('.nb')[1],'sc')">
+            <div class="card-bg-c" style="background:linear-gradient(160deg,#060d28 0%,#0d1a45 50%,#091230 100%);">
+              <svg width="260" height="280" viewBox="0 0 260 280" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;"><circle cx="130" cy="110" r="70" stroke="rgba(99,130,255,0.12)" stroke-width="1"/><circle cx="130" cy="110" r="50" stroke="rgba(99,130,255,0.18)" stroke-width="1"/><circle cx="130" cy="110" r="30" stroke="rgba(99,130,255,0.25)" stroke-width="1"/><circle cx="130" cy="110" r="12" fill="rgba(99,130,255,0.3)" stroke="rgba(139,163,255,0.6)" stroke-width="1.5"/><circle cx="130" cy="110" r="5" fill="#8BA3FF"/><line x1="139" y1="119" x2="158" y2="138" stroke="#6382FF" stroke-width="2" stroke-linecap="round"/><rect x="155" y="135" width="28" height="20" rx="3" fill="rgba(99,130,255,0.2)" stroke="rgba(99,130,255,0.5)" stroke-width="1"/><circle cx="86" cy="68" r="5" fill="rgba(255,184,77,0.3)" stroke="rgba(255,184,77,0.6)" stroke-width="1"/><circle cx="175" cy="78" r="5" fill="rgba(0,245,160,0.3)" stroke="rgba(0,245,160,0.6)" stroke-width="1"/></svg>
+            </div>
+            <div class="card-overlay-c"></div>
+            <div class="card-number">01 / 07</div>
+            <div class="card-badge-c">● Live</div>
+            <div class="card-content-c"><div class="card-stat-bar" style="color:var(--blue);"><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip"></div></div><div class="card-category-c">System 01</div><div class="card-title-c">Lead Scraper</div><div class="card-desc-c">Pull 53 qualified prospects from Google Maps + Yelp.</div><div class="card-cta-c">Open Module</div></div>
+          </div>
+          <div class="cat-card" onclick="nav(document.querySelectorAll('.nb')[2],'au')">
+            <div class="card-bg-c" style="background:linear-gradient(160deg,#1a0820 0%,#2d1045 50%,#180a28 100%);">
+              <svg width="260" height="280" viewBox="0 0 260 280" fill="none" style="position:absolute;inset:0;width:100%;height:100%;"><rect x="40" y="30" width="180" height="200" rx="6" fill="rgba(255,94,125,0.04)" stroke="rgba(255,94,125,0.15)"/><rect x="40" y="30" width="180" height="28" rx="6" fill="rgba(255,94,125,0.1)"/><circle cx="100" cy="160" r="38" stroke="rgba(255,184,77,0.12)" stroke-width="8"/><circle cx="100" cy="160" r="38" stroke="rgba(255,184,77,0.5)" stroke-width="8" stroke-dasharray="155 239" stroke-linecap="round" transform="rotate(-90 100 160)"/><text x="100" y="156" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="20" font-family="serif">92</text><text x="100" y="168" text-anchor="middle" fill="rgba(122,138,170,0.7)" font-size="8" font-family="monospace">SCORE</text></svg>
+            </div>
+            <div class="card-overlay-c"></div>
+            <div class="card-number">02 / 07</div>
+            <div class="card-badge-c" style="background:rgba(255,94,125,.12);border-color:rgba(255,94,125,.4);color:#FF8FA8;">🔥 28 Hot</div>
+            <div class="card-content-c"><div class="card-stat-bar" style="color:var(--rose);"><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div></div><div class="card-category-c" style="color:var(--rose);">System 02</div><div class="card-title-c">Site Auditor</div><div class="card-desc-c">9 automation gaps per site. Every lead scored 0–100.</div><div class="card-cta-c" style="color:#FF8FA8;">Open Module</div></div>
+          </div>
+          <div class="cat-card" onclick="nav(document.querySelectorAll('.nb')[3],'ou')">
+            <div class="card-bg-c" style="background:linear-gradient(160deg,#041a10 0%,#072e1a 50%,#031408 100%);">
+              <svg width="260" height="280" viewBox="0 0 260 280" fill="none" style="position:absolute;inset:0;width:100%;height:100%;"><rect x="30" y="25" width="200" height="140" rx="6" fill="rgba(0,245,160,0.04)" stroke="rgba(0,245,160,0.12)"/><rect x="30" y="25" width="200" height="24" rx="6" fill="rgba(0,245,160,0.08)"/><text x="50" y="41" fill="rgba(0,245,160,0.6)" font-size="7" font-family="monospace">TO: hello@acreliable.com</text><text x="120" y="211" fill="rgba(0,245,160,0.9)" font-size="22" font-family="serif">4.8%</text></svg>
+            </div>
+            <div class="card-overlay-c"></div>
+            <div class="card-number">03 / 07</div>
+            <div class="card-badge-c" style="background:rgba(0,245,160,.08);border-color:rgba(0,245,160,.35);color:var(--green);">4.8% Reply</div>
+            <div class="card-content-c"><div class="card-stat-bar" style="color:var(--green);"><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip"></div><div class="card-stat-pip"></div></div><div class="card-category-c" style="color:var(--green);">System 03</div><div class="card-title-c">Outreach Engine</div><div class="card-desc-c">Claude writes personalized emails citing exact audit gaps.</div><div class="card-cta-c" style="color:var(--green);">Open Module</div></div>
+          </div>
+          <div class="cat-card" onclick="nav(document.querySelectorAll('.nb')[4],'dm')">
+            <div class="card-bg-c" style="background:linear-gradient(160deg,#1a0e04 0%,#2e1c06 50%,#150b02 100%);"></div>
+            <div class="card-overlay-c"></div>
+            <div class="card-number">04 / 07</div>
+            <div class="card-badge-c" style="background:rgba(255,184,77,.1);border-color:rgba(255,184,77,.4);color:var(--amber);">3 Deployed</div>
+            <div class="card-content-c"><div class="card-stat-bar" style="color:var(--amber);"><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip"></div></div><div class="card-category-c" style="color:var(--amber);">System 04</div><div class="card-title-c">Demo Builder</div><div class="card-desc-c">"I built this for you" — highest-converting outreach.</div><div class="card-cta-c" style="color:var(--amber);">Open Module</div></div>
+          </div>
+          <div class="cat-card" onclick="nav(document.querySelectorAll('.nb')[5],'cr')">
+            <div class="card-bg-c" style="background:linear-gradient(160deg,#100820 0%,#1e0d35 50%,#0c0618 100%);"></div>
+            <div class="card-overlay-c"></div>
+            <div class="card-number">05 / 07</div>
+            <div class="card-badge-c" style="background:rgba(155,109,255,.12);border-color:rgba(155,109,255,.4);color:#C4A3FF;">$32K Pipeline</div>
+            <div class="card-content-c"><div class="card-stat-bar" style="color:#C4A3FF;"><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip"></div></div><div class="card-category-c" style="color:#C4A3FF;">System 05</div><div class="card-title-c">CRM Pipeline</div><div class="card-desc-c">Gmail sync, auto intent tagging, follow-up drafting.</div><div class="card-cta-c" style="color:#C4A3FF;">Open Module</div></div>
+          </div>
+          <div class="cat-card" onclick="nav(document.querySelectorAll('.nb')[6],'in')">
+            <div class="card-bg-c" style="background:linear-gradient(160deg,#04101a 0%,#071e2e 50%,#031018 100%);"></div>
+            <div class="card-overlay-c"></div>
+            <div class="card-number">06 / 07</div>
+            <div class="card-badge-c" style="background:rgba(0,229,255,.08);border-color:rgba(0,229,255,.35);color:var(--cyan);">12 Signals</div>
+            <div class="card-content-c"><div class="card-stat-bar" style="color:var(--cyan);"><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div></div><div class="card-category-c" style="color:var(--cyan);">System 06</div><div class="card-title-c">Intent Signals</div><div class="card-desc-c">Reddit, Indeed, LinkedIn daily buying signal monitoring.</div><div class="card-cta-c" style="color:var(--cyan);">Open Module</div></div>
+          </div>
+          <div class="cat-card" onclick="nav(document.querySelectorAll('.nb')[7],'as')">
+            <div class="card-bg-c" style="background:linear-gradient(160deg,#0a1a08 0%,#162e12 50%,#081408 100%);"></div>
+            <div class="card-overlay-c"></div>
+            <div class="card-number">07 / 07</div>
+            <div class="card-badge-c" style="background:rgba(0,245,160,.08);border-color:rgba(0,245,160,.35);color:var(--green);">Proof Assets</div>
+            <div class="card-content-c"><div class="card-stat-bar" style="color:var(--green);"><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip filled"></div><div class="card-stat-pip"></div><div class="card-stat-pip"></div></div><div class="card-category-c" style="color:var(--green);">System 07</div><div class="card-title-c">Proof Assets</div><div class="card-desc-c">ROI calculators, Loom scripts, audit PDFs per prospect.</div><div class="card-cta-c" style="color:var(--green);">Open Module</div></div>
+          </div>
+          <!-- duplicates for infinite scroll -->
+          <div class="cat-card" onclick="nav(document.querySelectorAll('.nb')[1],'sc')"><div class="card-bg-c" style="background:linear-gradient(160deg,#060d28,#0d1a45,#091230);"></div><div class="card-overlay-c"></div><div class="card-number">01 / 07</div><div class="card-badge-c">● Live</div><div class="card-content-c"><div class="card-category-c">System 01</div><div class="card-title-c">Lead Scraper</div><div class="card-desc-c">53 prospects from Google Maps + Yelp.</div><div class="card-cta-c">Open Module</div></div></div>
+          <div class="cat-card" onclick="nav(document.querySelectorAll('.nb')[2],'au')"><div class="card-bg-c" style="background:linear-gradient(160deg,#1a0820,#2d1045,#180a28);"></div><div class="card-overlay-c"></div><div class="card-number">02 / 07</div><div class="card-badge-c" style="color:#FF8FA8;">🔥 28 Hot</div><div class="card-content-c"><div class="card-category-c" style="color:var(--rose);">System 02</div><div class="card-title-c">Site Auditor</div><div class="card-desc-c">9 gaps per site. Scored 0–100.</div><div class="card-cta-c" style="color:#FF8FA8;">Open Module</div></div></div>
+          <div class="cat-card" onclick="nav(document.querySelectorAll('.nb')[3],'ou')"><div class="card-bg-c" style="background:linear-gradient(160deg,#041a10,#072e1a,#031408);"></div><div class="card-overlay-c"></div><div class="card-number">03 / 07</div><div class="card-badge-c" style="color:var(--green);">4.8% Reply</div><div class="card-content-c"><div class="card-category-c" style="color:var(--green);">System 03</div><div class="card-title-c">Outreach Engine</div><div class="card-desc-c">AI personalized cold email at scale.</div><div class="card-cta-c" style="color:var(--green);">Open Module</div></div></div>
+          <div class="cat-card" onclick="nav(document.querySelectorAll('.nb')[5],'cr')"><div class="card-bg-c" style="background:linear-gradient(160deg,#100820,#1e0d35,#0c0618);"></div><div class="card-overlay-c"></div><div class="card-number">05 / 07</div><div class="card-badge-c" style="color:#C4A3FF;">$32K Pipeline</div><div class="card-content-c"><div class="card-category-c" style="color:#C4A3FF;">System 05</div><div class="card-title-c">CRM Pipeline</div><div class="card-desc-c">Gmail sync + auto intent tagging.</div><div class="card-cta-c" style="color:#C4A3FF;">Open Module</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES STRIP -->
+    <div class="feat-strip" style="margin-top:55px;">
+      <div class="feat-item"><div class="feat-icon">◈</div><div class="feat-title">Fully Automated</div><div class="feat-desc">All 7 systems run autonomously — scrape, audit, email, demo, close. Zero manual steps required.</div></div>
+      <div class="feat-item"><div class="feat-icon">↻</div><div class="feat-title">Real-Time Sync</div><div class="feat-desc">Gmail API, Google Maps, Yelp, Apollo — live data refreshed every single cycle. Always fresh.</div></div>
+      <div class="feat-item"><div class="feat-icon">◉</div><div class="feat-title">AI-Personalized</div><div class="feat-desc">Claude writes every email referencing exact audit gaps. 2–3× industry reply rates at scale.</div></div>
+    </div>
+
+    <!-- HOW IT WORKS — infinite marquee version -->
+    <div class="pipeline-section">
+      <div class="section-tag2">How It Works</div>
+      <h2 class="section-title2">From Zero to <em>Closed Deal</em></h2>
+      <p class="section-sub2">5 steps. Fully automated. Human only required to show up for the call.</p>
+      <!-- Compact static layout + marquee step cards below -->
+      <div class="marquee-wrap" style="margin-top:40px;">
+        <div class="marquee-track" id="pipelineMarquee">
+          <!-- Step cards -->
+          <div style="flex-shrink:0;width:clamp(180px,22vw,240px);background:rgba(99,130,255,.04);border:1px solid rgba(99,130,255,.12);padding:24px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;">
+            <div style="font-size:32px;margin-bottom:14px;">🗺️</div>
+            <div style="font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--blue);margin-bottom:6px;">STEP 01</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Scrape</div>
+            <div style="font-size:11px;color:var(--muted2);line-height:1.6;margin-bottom:12px;">Google Maps + Yelp pull qualified leads filtered by reviews and rating.</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--green);padding:3px 8px;border:1px solid rgba(0,245,160,.2);background:rgba(0,245,160,.04);">53 leads</div>
+          </div>
+          <div style="flex-shrink:0;display:flex;align-items:center;font-size:20px;color:rgba(99,130,255,.4);padding:0 4px;">→</div>
+          <div style="flex-shrink:0;width:clamp(180px,22vw,240px);background:rgba(255,94,125,.03);border:1px solid rgba(255,94,125,.1);padding:24px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;">
+            <div style="font-size:32px;margin-bottom:14px;">🔍</div>
+            <div style="font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--rose);margin-bottom:6px;">STEP 02</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Audit</div>
+            <div style="font-size:11px;color:var(--muted2);line-height:1.6;margin-bottom:12px;">AI scans each website for 9 automation gaps. Scores leads 0–100.</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--rose);padding:3px 8px;border:1px solid rgba(255,94,125,.2);background:rgba(255,94,125,.04);">28 hot</div>
+          </div>
+          <div style="flex-shrink:0;display:flex;align-items:center;font-size:20px;color:rgba(99,130,255,.4);padding:0 4px;">→</div>
+          <div style="flex-shrink:0;width:clamp(180px,22vw,240px);background:rgba(0,245,160,.03);border:1px solid rgba(0,245,160,.1);padding:24px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;">
+            <div style="font-size:32px;margin-bottom:14px;">✉️</div>
+            <div style="font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--green);margin-bottom:6px;">STEP 03</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Outreach</div>
+            <div style="font-size:11px;color:var(--muted2);line-height:1.6;margin-bottom:12px;">Claude writes a personalized email per lead citing exact gaps found.</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--green);padding:3px 8px;border:1px solid rgba(0,245,160,.2);background:rgba(0,245,160,.04);">4.8% reply</div>
+          </div>
+          <div style="flex-shrink:0;display:flex;align-items:center;font-size:20px;color:rgba(99,130,255,.4);padding:0 4px;">→</div>
+          <div style="flex-shrink:0;width:clamp(180px,22vw,240px);background:rgba(255,184,77,.03);border:1px solid rgba(255,184,77,.1);padding:24px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;">
+            <div style="font-size:32px;margin-bottom:14px;">📞</div>
+            <div style="font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--amber);margin-bottom:6px;">STEP 04</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Demo</div>
+            <div style="font-size:11px;color:var(--muted2);line-height:1.6;margin-bottom:12px;">AI receptionist demo built for each prospect before the call.</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--amber);padding:3px 8px;border:1px solid rgba(255,184,77,.2);background:rgba(255,184,77,.04);">3 deployed</div>
+          </div>
+          <div style="flex-shrink:0;display:flex;align-items:center;font-size:20px;color:rgba(99,130,255,.4);padding:0 4px;">→</div>
+          <div style="flex-shrink:0;width:clamp(180px,22vw,240px);background:rgba(155,109,255,.03);border:1px solid rgba(155,109,255,.1);padding:24px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;">
+            <div style="font-size:32px;margin-bottom:14px;">💰</div>
+            <div style="font-family:var(--mono);font-size:7px;letter-spacing:3px;color:#C4A3FF;margin-bottom:6px;">STEP 05</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Close</div>
+            <div style="font-size:11px;color:var(--muted2);line-height:1.6;margin-bottom:12px;">CRM tracks every deal. AI drafts follow-ups. You just show up.</div>
+            <div style="font-family:var(--mono);font-size:9px;color:#C4A3FF;padding:3px 8px;border:1px solid rgba(155,109,255,.2);background:rgba(155,109,255,.04);">$32K active</div>
+          </div>
+          <!-- duplicated for seamless loop -->
+          <div style="flex-shrink:0;display:flex;align-items:center;font-size:20px;color:rgba(99,130,255,.4);padding:0 16px;">→</div>
+          <div style="flex-shrink:0;width:clamp(180px,22vw,240px);background:rgba(99,130,255,.04);border:1px solid rgba(99,130,255,.12);padding:24px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;"><div style="font-size:32px;margin-bottom:14px;">🗺️</div><div style="font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--blue);margin-bottom:6px;">STEP 01</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Scrape</div><div style="font-size:11px;color:var(--muted2);line-height:1.6;margin-bottom:12px;">Google Maps + Yelp pull qualified leads.</div><div style="font-family:var(--mono);font-size:9px;color:var(--green);padding:3px 8px;border:1px solid rgba(0,245,160,.2);">53 leads</div></div>
+          <div style="flex-shrink:0;display:flex;align-items:center;font-size:20px;color:rgba(99,130,255,.4);padding:0 4px;">→</div>
+          <div style="flex-shrink:0;width:clamp(180px,22vw,240px);background:rgba(255,94,125,.03);border:1px solid rgba(255,94,125,.1);padding:24px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;"><div style="font-size:32px;margin-bottom:14px;">🔍</div><div style="font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--rose);margin-bottom:6px;">STEP 02</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Audit</div><div style="font-size:11px;color:var(--muted2);line-height:1.6;margin-bottom:12px;">AI scans 9 automation gaps. Scores 0–100.</div><div style="font-family:var(--mono);font-size:9px;color:var(--rose);padding:3px 8px;border:1px solid rgba(255,94,125,.2);">28 hot</div></div>
+          <div style="flex-shrink:0;display:flex;align-items:center;font-size:20px;color:rgba(99,130,255,.4);padding:0 4px;">→</div>
+          <div style="flex-shrink:0;width:clamp(180px,22vw,240px);background:rgba(0,245,160,.03);border:1px solid rgba(0,245,160,.1);padding:24px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;"><div style="font-size:32px;margin-bottom:14px;">✉️</div><div style="font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--green);margin-bottom:6px;">STEP 03</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Outreach</div><div style="font-size:11px;color:var(--muted2);line-height:1.6;margin-bottom:12px;">Claude writes personalized cold email.</div><div style="font-family:var(--mono);font-size:9px;color:var(--green);padding:3px 8px;border:1px solid rgba(0,245,160,.2);">4.8% reply</div></div>
+          <div style="flex-shrink:0;display:flex;align-items:center;font-size:20px;color:rgba(99,130,255,.4);padding:0 4px;">→</div>
+          <div style="flex-shrink:0;width:clamp(180px,22vw,240px);background:rgba(255,184,77,.03);border:1px solid rgba(255,184,77,.1);padding:24px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;"><div style="font-size:32px;margin-bottom:14px;">📞</div><div style="font-family:var(--mono);font-size:7px;letter-spacing:3px;color:var(--amber);margin-bottom:6px;">STEP 04</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Demo</div><div style="font-size:11px;color:var(--muted2);line-height:1.6;margin-bottom:12px;">AI receptionist demo per prospect.</div><div style="font-family:var(--mono);font-size:9px;color:var(--amber);padding:3px 8px;border:1px solid rgba(255,184,77,.2);">3 deployed</div></div>
+          <div style="flex-shrink:0;display:flex;align-items:center;font-size:20px;color:rgba(99,130,255,.4);padding:0 4px;">→</div>
+          <div style="flex-shrink:0;width:clamp(180px,22vw,240px);background:rgba(155,109,255,.03);border:1px solid rgba(155,109,255,.1);padding:24px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;"><div style="font-size:32px;margin-bottom:14px;">💰</div><div style="font-family:var(--mono);font-size:7px;letter-spacing:3px;color:#C4A3FF;margin-bottom:6px;">STEP 05</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Close</div><div style="font-size:11px;color:var(--muted2);line-height:1.6;margin-bottom:12px;">CRM + AI follow-ups. Just show up.</div><div style="font-family:var(--mono);font-size:9px;color:#C4A3FF;padding:3px 8px;border:1px solid rgba(155,109,255,.2);">$32K active</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORKFLOW SECTION -->
+    <div class="workflow-section">
+      <div class="section-tag2">Automation Architecture</div>
+      <h2 class="section-title2">The Machine <em>Behind It</em></h2>
+      <div class="workflow-grid">
+        <div>
+          <div class="wf-visual">
+            <!-- Floating decorative icons -->
+            <span class="float-icon" style="top:10px;right:30px;--fd:7s;--fdel:0s;">🤖</span>
+            <span class="float-icon" style="top:200px;right:10px;--fd:5.5s;--fdel:1s;">⚡</span>
+            <span class="float-icon" style="top:280px;left:10px;--fd:8s;--fdel:2s;">🔗</span>
+            <span class="float-icon" style="top:80px;left:50px;--fd:6s;--fdel:.5s;">☁️</span>
+            <div class="wf-node" style="top:16px;left:16px;width:190px;z-index:1;">
+              <div class="wf-node-ico" style="background:rgba(99,130,255,.1);">🔍</div>
+              <div><div class="wf-node-txt">Google Maps API</div><div class="wf-node-sub">Lead source</div></div>
+            </div>
+            <div class="wf-node" style="top:84px;right:8px;width:172px;z-index:1;">
+              <div class="wf-node-ico" style="background:rgba(255,94,125,.1);">🤖</div>
+              <div><div class="wf-node-txt">Claude Sonnet</div><div class="wf-node-sub">Audit + Write</div></div>
+            </div>
+            <div class="wf-node" style="top:158px;left:50px;width:192px;z-index:1;">
+              <div class="wf-node-ico" style="background:rgba(0,245,160,.08);">📧</div>
+              <div><div class="wf-node-txt">Gmail API</div><div class="wf-node-sub">Send + track</div></div>
+            </div>
+            <div class="wf-node" style="top:234px;left:14px;width:142px;z-index:1;">
+              <div class="wf-node-ico" style="background:rgba(155,109,255,.1);">🎙️</div>
+              <div><div class="wf-node-txt">Vapi Voice</div><div class="wf-node-sub">AI receptionist</div></div>
+            </div>
+            <div class="wf-node" style="top:234px;right:8px;width:142px;z-index:1;">
+              <div class="wf-node-ico" style="background:rgba(255,184,77,.08);">📅</div>
+              <div><div class="wf-node-txt">Cal.com</div><div class="wf-node-sub">Auto-book</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="wf-items">
+          <div class="wf-item"><div class="wf-item-num">01</div><div><div class="wf-item-title">Data Extraction Layer</div><div class="wf-item-desc">Google Maps API pulls businesses by niche + city. Yelp Fusion adds review count. Apollo enriches emails.</div></div></div>
+          <div class="wf-item"><div class="wf-item-num">02</div><div><div class="wf-item-title">AI Intelligence Layer</div><div class="wf-item-desc">Claude Sonnet audits each site for 9 specific gaps. Scores 0–100. Writes one personalized email per lead in under 2 seconds.</div></div></div>
+          <div class="wf-item"><div class="wf-item-num">03</div><div><div class="wf-item-title">Delivery & Demo Layer</div><div class="wf-item-desc">Emails sent via Gmail API. Demos deployed via Vapi + Make. Booking flows through Cal.com automatically.</div></div></div>
+          <div class="wf-item"><div class="wf-item-num">04</div><div><div class="wf-item-title">CRM Closing Layer</div><div class="wf-item-desc">Every reply auto-tagged by intent. Follow-ups drafted. Calendar slots synced. You get notified when to show up.</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTIVE PIPELINE (dynamic / live values) -->
+    <div style="padding:0 clamp(20px,5vw,60px) 0;">
+      <div class="section-tag2">Live Pipeline State</div>
+      <h2 class="section-title2">Active <em>Deals Now</em></h2>
+      <div class="pipeline-live-box" id="pipelineLiveBox">
+        <div class="plb-stat">
+          <div class="plb-label">Active Pipeline</div>
+          <div class="plb-num" style="color:#C4A3FF;" id="plb-pipeline">$32K</div>
+          <div class="plb-change" id="plb-pipeline-chg">↑ 34% this week</div>
+          <div class="plb-bar-track"><div class="plb-bar-fill" id="plb-bar1" style="width:85%;background:linear-gradient(90deg,var(--blue),var(--violet));"></div></div>
+        </div>
+        <div class="plb-stat">
+          <div class="plb-label">Hot Leads (70+)</div>
+          <div class="plb-num" style="color:var(--rose);" id="plb-hot">28</div>
+          <div class="plb-change" id="plb-hot-chg">↑ 4 since yesterday</div>
+          <div class="plb-bar-track"><div class="plb-bar-fill" id="plb-bar2" style="width:72%;background:var(--rose);"></div></div>
+        </div>
+        <div class="plb-stat">
+          <div class="plb-label">Warm Leads (40–70)</div>
+          <div class="plb-num" style="color:var(--amber);" id="plb-warm">16</div>
+          <div class="plb-change">in nurture sequence</div>
+          <div class="plb-bar-track"><div class="plb-bar-fill" id="plb-bar3" style="width:42%;background:var(--amber);"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OFFER BANNER -->
+    <div style="padding:32px clamp(16px,5vw,60px) clamp(40px,5vw,60px);">
+      <div class="offer-banner">
+        <div class="offer-pct" id="banner-pipe">$32K</div>
+        <div style="flex:1;">
+          <h2 class="offer-text-big">Active Pipeline — <em>Close Now</em></h2>
+          <p class="offer-sub">28 hot leads scored 70+. 16 warm leads in nurture. 7 replies waiting. The machine is running — time to close deals.</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <button class="btn btn-p" onclick="nav(document.querySelectorAll('.nb')[5],'cr')">▶ Open CRM</button>
+            <button class="btn btn-g" onclick="nav(document.querySelectorAll('.nb')[6],'in')">Intent Signals →</button>
+            <button class="btn btn-g" onclick="nav(document.querySelectorAll('.nb')[3],'ou')">Outreach →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGNAL FEED ROW REVERSE -->
+    <section style="padding:0 0 50px;">
+      <div style="padding:0 clamp(20px,5vw,60px);margin-bottom:28px;">
+        <div class="section-tag2">Live Activity</div>
+        <h2 class="section-title2">Today's <em>Signal Feed</em></h2>
+      </div>
+      <div class="cards-outer">
+        <div class="cards-track-rev">
+          <div class="cat-card cat-card-sm"><div class="card-bg-c" style="background:linear-gradient(135deg,#2e0d0a,#4a1b18);"><div style="font-size:55px;opacity:.1;margin-top:20px;">🔥</div></div><div class="card-overlay-c"></div><div class="card-badge-c" style="background:rgba(255,94,125,.12);border-color:rgba(255,94,125,.3);color:#FF8FA8;">Hot</div><div class="card-content-c"><div class="card-category-c" style="color:var(--rose);">Indeed · 2h ago</div><div class="card-title-c">Sunrise HVAC</div><div class="card-cta-c" style="color:#FF8FA8;">Outreach</div></div></div>
+          <div class="cat-card cat-card-sm"><div class="card-bg-c" style="background:linear-gradient(135deg,#0d2e0a,#1a4a18);"><div style="font-size:55px;opacity:.1;margin-top:20px;">⭐</div></div><div class="card-overlay-c"></div><div class="card-badge-c" style="background:rgba(0,245,160,.08);border-color:rgba(0,245,160,.25);color:var(--green);">Reply</div><div class="card-content-c"><div class="card-category-c" style="color:var(--green);">CRM · Active</div><div class="card-title-c">Reliable AC</div><div class="card-cta-c" style="color:var(--green);">View Deal</div></div></div>
+          <div class="cat-card cat-card-sm"><div class="card-bg-c" style="background:linear-gradient(135deg,#0d1a37,#0a2a4a);"><div style="font-size:55px;opacity:.1;margin-top:20px;">📞</div></div><div class="card-overlay-c"></div><div class="card-badge-c" style="background:rgba(99,130,255,.15);border-color:rgba(99,130,255,.3);color:var(--blue2);">Demo Live</div><div class="card-content-c"><div class="card-category-c">Demo Builder</div><div class="card-title-c">Flow-Tech AC</div><div class="card-cta-c">View Demo</div></div></div>
+          <div class="cat-card cat-card-sm"><div class="card-bg-c" style="background:linear-gradient(135deg,#2e1a0d,#3d2a0a);"><div style="font-size:55px;opacity:.1;margin-top:20px;">⚡</div></div><div class="card-overlay-c"></div><div class="card-badge-c" style="background:rgba(255,184,77,.1);border-color:rgba(255,184,77,.3);color:var(--amber);">Signal</div><div class="card-content-c"><div class="card-category-c" style="color:var(--amber);">Reddit · 5h ago</div><div class="card-title-c">Landscaping Co.</div><div class="card-cta-c" style="color:var(--amber);">DM Now</div></div></div>
+          <div class="cat-card cat-card-sm"><div class="card-bg-c" style="background:linear-gradient(135deg,#1a0d2e,#2d0a3e);"></div><div class="card-overlay-c"></div><div class="card-badge-c" style="background:rgba(155,109,255,.12);border-color:rgba(155,109,255,.3);color:#C4A3FF;">Opened 3×</div><div class="card-content-c"><div class="card-category-c" style="color:#C4A3FF;">Proposal Sent</div><div class="card-title-c">Coolest AC</div><div class="card-cta-c" style="color:#C4A3FF;">Follow Up</div></div></div>
+          <div class="cat-card cat-card-sm"><div class="card-bg-c" style="background:linear-gradient(135deg,#0a1e2d,#0d2a1a);"></div><div class="card-overlay-c"></div><div class="card-badge-c" style="background:rgba(0,229,255,.08);border-color:rgba(0,229,255,.25);color:var(--cyan);">Score 92</div><div class="card-content-c"><div class="card-category-c" style="color:var(--cyan);">Audited</div><div class="card-title-c">Miami Plumbing</div><div class="card-cta-c" style="color:var(--cyan);">Generate Email</div></div></div>
+          <!-- duplicates -->
+          <div class="cat-card cat-card-sm"><div class="card-bg-c" style="background:linear-gradient(135deg,#2e0d0a,#4a1b18);"></div><div class="card-overlay-c"></div><div class="card-badge-c" style="color:#FF8FA8;">Hot</div><div class="card-content-c"><div class="card-category-c" style="color:var(--rose);">Indeed · 2h ago</div><div class="card-title-c">Sunrise HVAC</div><div class="card-cta-c" style="color:#FF8FA8;">Outreach</div></div></div>
+          <div class="cat-card cat-card-sm"><div class="card-bg-c" style="background:linear-gradient(135deg,#0d2e0a,#1a4a18);"></div><div class="card-overlay-c"></div><div class="card-badge-c" style="color:var(--green);">Reply</div><div class="card-content-c"><div class="card-category-c" style="color:var(--green);">CRM · Active</div><div class="card-title-c">Reliable AC</div><div class="card-cta-c" style="color:var(--green);">View Deal</div></div></div>
+          <div class="cat-card cat-card-sm"><div class="card-bg-c" style="background:linear-gradient(135deg,#0d1a37,#0a2a4a);"></div><div class="card-overlay-c"></div><div class="card-badge-c" style="color:var(--blue2);">Demo Live</div><div class="card-content-c"><div class="card-category-c">Demo Builder</div><div class="card-title-c">Flow-Tech AC</div><div class="card-cta-c">View Demo</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TESTIMONIALS — seamless infinite scroll -->
+    <div class="testi-section">
+      <div class="testi-section-hdr">
+        <div class="section-tag2">User Results</div>
+        <h2 class="section-title2">What Operators <em>Say</em></h2>
+      </div>
+      <div class="marquee-wrap">
+        <div class="marquee-track">
+          <div class="testi-card"><div class="testi-stars">★★★★★</div><div class="testi-text">"Booked 6 calls in the first week. The personalized audit emails hit different — prospects actually reply."</div><div class="testi-author">◈ Marcus D. — Agency Owner, Miami</div><div class="testi-result">↑ 6 calls · week 1</div></div>
+          <div class="testi-card"><div class="testi-stars">★★★★★</div><div class="testi-text">"The intent signals alone are worth it. Found a roofer posting about being overwhelmed — closed him in 2 days."</div><div class="testi-author">◈ Priya K. — Automation Consultant</div><div class="testi-result">↑ Closed in 48 hours</div></div>
+          <div class="testi-card"><div class="testi-stars">★★★★★</div><div class="testi-text">"$32K in pipeline from a single scrape run. The demo builder closes deals before I even get on a call."</div><div class="testi-author">◈ Jordan R. — AI Agency, Tampa FL</div><div class="testi-result">↑ $32K pipeline</div></div>
+          <div class="testi-card"><div class="testi-stars">★★★★★</div><div class="testi-text">"Running 3 niches simultaneously. The outreach engine writes better cold emails than I ever did manually."</div><div class="testi-author">◈ Aisha M. — Digital Agency Owner</div><div class="testi-result">↑ 3 niches automated</div></div>
+          <div class="testi-card"><div class="testi-stars">★★★★★</div><div class="testi-text">"Set it up Friday afternoon. Had 2 booked calls by Monday morning. This thing does not sleep."</div><div class="testi-author">◈ Tyler B. — Freelance Automator</div><div class="testi-result">↑ 2 calls over weekend</div></div>
+          <!-- duplicates for seamless loop -->
+          <div class="testi-card"><div class="testi-stars">★★★★★</div><div class="testi-text">"Booked 6 calls in the first week. The personalized audit emails hit different — prospects actually reply."</div><div class="testi-author">◈ Marcus D. — Agency Owner, Miami</div><div class="testi-result">↑ 6 calls · week 1</div></div>
+          <div class="testi-card"><div class="testi-stars">★★★★★</div><div class="testi-text">"The intent signals alone are worth it. Found a roofer posting about being overwhelmed — closed him in 2 days."</div><div class="testi-author">◈ Priya K. — Automation Consultant</div><div class="testi-result">↑ Closed in 48 hours</div></div>
+          <div class="testi-card"><div class="testi-stars">★★★★★</div><div class="testi-text">"$32K in pipeline from a single scrape run. The demo builder closes deals before I even get on a call."</div><div class="testi-author">◈ Jordan R. — AI Agency, Tampa FL</div><div class="testi-result">↑ $32K pipeline</div></div>
+          <div class="testi-card"><div class="testi-stars">★★★★★</div><div class="testi-text">"Running 3 niches simultaneously. The outreach engine writes better cold emails than I ever did manually."</div><div class="testi-author">◈ Aisha M. — Digital Agency Owner</div><div class="testi-result">↑ 3 niches automated</div></div>
+          <div class="testi-card"><div class="testi-stars">★★★★★</div><div class="testi-text">"Set it up Friday afternoon. Had 2 booked calls by Monday morning. This thing does not sleep."</div><div class="testi-author">◈ Tyler B. — Freelance Automator</div><div class="testi-result">↑ 2 calls over weekend</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer-strip">
+      <div class="footer-brand">AutoFlow <em>OS</em></div>
+      <div class="footer-links">
+        <div class="footer-link" onclick="nav(document.querySelectorAll('.nb')[0],'ov')">Overview</div>
+        <div class="footer-link" onclick="nav(document.querySelectorAll('.nb')[1],'sc')">Scraper</div>
+        <div class="footer-link" onclick="nav(document.querySelectorAll('.nb')[2],'au')">Auditor</div>
+        <div class="footer-link" onclick="nav(document.querySelectorAll('.nb')[5],'cr')">CRM</div>
+        <div class="footer-link" onclick="nav(document.querySelectorAll('.nb')[7],'as')">Assets</div>
+      </div>
+      <div class="footer-status"><div class="footer-dot"></div>All Systems Live</div>
+    </div>
+
+  </div><!-- end pg-ov -->
+
+  <!-- ══ SCRAPER ══ -->
+  <div class="pg" id="pg-sc">
+    <div class="inner-pg">
+      <div class="ph rv"><div><div class="ph-eye">System 01</div><div class="ph-title">Lead <em>Scraper</em></div><div class="ph-desc">Pull qualified prospects from Google Maps + Yelp. Set niche × city matrix and fire.</div></div><button class="btn btn-p" onclick="runScraper()">▶ Run Scraper</button></div>
+      <div class="g2">
+        <div>
+          <div class="card rv"><div class="ch"><div class="ct2"><div class="cd" style="background:var(--blue);color:var(--blue)"></div>Target Configuration</div></div><div class="cb"><div class="fg"><label class="fl">Niches</label><input class="fi" id="sn" value="HVAC, Plumbing, Landscaping, Roofing"></div><div class="fg"><label class="fl">Cities</label><input class="fi" id="sc2" value="Miami FL, Tampa FL, Orlando FL"></div><div class="fg"><label class="fl">Source</label><select class="fs"><option>Google Maps + Yelp</option><option>Google Maps Only</option><option>Yelp Only</option></select></div></div></div>
+          <div class="card rv"><div class="ch"><div class="ct2"><div class="cd" style="background:var(--blue);color:var(--blue)"></div>Quality Filters</div></div><div class="cb" style="padding:0 18px;"><div class="tr2"><span>Min 50+ reviews</span><div class="tg on" onclick="this.classList.toggle('on')"></div></div><div class="tr2"><span>Min 4.2★ rating</span><div class="tg on" onclick="this.classList.toggle('on')"></div></div><div class="tr2"><span>Must have real website</span><div class="tg on" onclick="this.classList.toggle('on')"></div></div><div class="tr2"><span>No online booking detected</span><div class="tg on" onclick="this.classList.toggle('on')"></div></div><div class="tr2"><span>Skip chains & franchises</span><div class="tg on" onclick="this.classList.toggle('on')"></div></div><div class="tr2"><span>Apollo email enrichment</span><div class="tg" onclick="this.classList.toggle('on')"></div></div></div></div>
+        </div>
+        <div>
+          <div class="card rv"><div class="ch"><div class="ct2"><div class="cd" style="background:var(--blue);color:var(--blue)"></div>Output Preview</div><button class="btn btn-g" style="font-size:7px;padding:6px 10px;" onclick="dlCSV()">↓ Export CSV</button></div><div class="tw"><table><thead><tr><th>Business</th><th>★</th><th>Rev</th><th>Site</th></tr></thead><tbody><tr><td><div style="font-weight:600;font-size:12px;color:var(--text)">Reliable Air Conditioning</div><div style="font-family:var(--mono);font-size:7px;color:var(--muted);margin-top:2px">HVAC · Miami FL</div></td><td><span style="color:var(--amber);font-family:var(--mono);font-size:10px">4.5</span></td><td style="font-family:var(--mono);font-size:10px">135</td><td><span class="tag t-g">Live</span></td></tr><tr><td><div style="font-weight:600;font-size:12px;color:var(--text)">Flow-Tech AC</div><div style="font-family:var(--mono);font-size:7px;color:var(--muted);margin-top:2px">HVAC · Miami FL</div></td><td><span style="color:var(--amber);font-family:var(--mono);font-size:10px">4.7</span></td><td style="font-family:var(--mono);font-size:10px">89</td><td><span class="tag t-g">Live</span></td></tr><tr><td><div style="font-weight:600;font-size:12px;color:var(--text)">Coolest Air Conditioning</div><div style="font-family:var(--mono);font-size:7px;color:var(--muted);margin-top:2px">HVAC · Miami FL</div></td><td><span style="color:var(--amber);font-family:var(--mono);font-size:10px">4.3</span></td><td style="font-family:var(--mono);font-size:10px">67</td><td><span class="tag t-g">Live</span></td></tr></tbody></table></div></div>
+          <div class="card rv"><div class="ch"><div class="ct2"><div class="cd" style="background:var(--green);color:var(--green)"></div>Live Log</div></div><div class="term" id="slog"><span class="t-bl">$</span> <span class="t-mt">Configure targets above and hit Run Scraper</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ AUDITOR ══ -->
+  <div class="pg" id="pg-au">
+    <div class="inner-pg">
+      <div class="ph rv"><div><div class="ph-eye">System 02</div><div class="ph-title">Site <em>Auditor</em></div><div class="ph-desc">9 automation gaps detected per site. Every lead scored 0–100. Your unfair advantage.</div></div><button class="btn btn-p" onclick="runAudit()">▶ Audit All Sites</button></div>
+      <div class="g60">
+        <div>
+          <div class="card rv"><div class="ch"><div class="ct2"><div class="cd" style="background:var(--rose);color:var(--rose)"></div>Reliable Air Conditioning</div><span class="tag t-r">🔥 Score: 92</span></div><div class="cb"><div style="display:flex;flex-direction:column;gap:0;"><div style="display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);"><div style="width:20px;height:20px;background:rgba(255,94,125,.1);border:1px solid rgba(255,94,125,.2);display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--rose);flex-shrink:0;margin-top:1px;">✗</div><div style="flex:1;"><div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px;">No chatbot or AI receptionist</div><div style="font-size:11px;color:var(--muted2);">No Tidio, Intercom, Drift detected</div></div><div style="font-family:var(--mono);font-size:10px;color:var(--rose);">+18</div></div><div style="display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);"><div style="width:20px;height:20px;background:rgba(255,94,125,.1);border:1px solid rgba(255,94,125,.2);display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--rose);flex-shrink:0;margin-top:1px;">✗</div><div style="flex:1;"><div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px;">No online booking system</div><div style="font-size:11px;color:var(--muted2);">No Calendly, Acuity, or booking widget</div></div><div style="font-family:var(--mono);font-size:10px;color:var(--rose);">+18</div></div><div style="display:flex;align-items:flex-start;gap:10px;padding:11px 0;"><div style="width:20px;height:20px;background:rgba(0,245,160,.08);border:1px solid rgba(0,245,160,.2);display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--green);flex-shrink:0;margin-top:1px;">✓</div><div style="flex:1;"><div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:2px;">Has website with contact form</div><div style="font-size:11px;color:var(--muted2);">Real domain · form at /contact</div></div><div style="font-family:var(--mono);font-size:10px;color:var(--green);">Pass</div></div></div></div></div>
+        </div>
+        <div>
+          <div class="card rv"><div class="ch"><div class="ct2"><div class="cd" style="background:var(--amber);color:var(--amber)"></div>Opportunity Score</div></div><div class="cb" style="text-align:center;"><div class="sr-w"><svg width="100" height="100" viewBox="0 0 110 110"><circle cx="55" cy="55" r="48" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="6"/><circle cx="55" cy="55" r="48" fill="none" stroke="url(#sg)" stroke-width="6" stroke-dasharray="301.59" stroke-dashoffset="27" stroke-linecap="round"/><defs><linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#FFB84D"/><stop offset="100%" stop-color="#FF5E7D"/></linearGradient></defs></svg><div class="sr-v"><div class="sr-n">92</div><div class="sr-s">/ 100</div></div></div><div class="tag t-r" style="margin-bottom:12px;">🔥 Hot Prospect</div><div style="font-size:12px;color:var(--muted2);line-height:1.6;">4 gaps · Est. <span style="color:var(--blue2)">$5,940/mo</span> lost</div></div></div>
+          <div class="card rv"><div class="ch"><div class="ct2"><div class="cd" style="background:var(--blue);color:var(--blue)"></div>Batch Progress</div></div><div class="cb"><div class="pw"><div class="pl"><span>AUDITED</span><span id="apct">53 / 53</span></div><div class="pt"><div class="pf" id="abar" style="width:100%"></div></div></div><div style="display:flex;gap:8px;margin-top:14px;"><div style="flex:1;background:rgba(255,94,125,.06);border:1px solid rgba(255,94,125,.1);padding:12px;text-align:center;"><div style="font-family:var(--serif);font-size:24px;color:var(--rose)">28</div><div style="font-family:var(--mono);font-size:6px;color:var(--muted);letter-spacing:2px;margin-top:2px;">HOT 70+</div></div><div style="flex:1;background:rgba(255,184,77,.06);border:1px solid rgba(255,184,77,.1);padding:12px;text-align:center;"><div style="font-family:var(--serif);font-size:24px;color:var(--amber)">16</div><div style="font-family:var(--mono);font-size:6px;color:var(--muted);letter-spacing:2px;margin-top:2px;">WARM 40+</div></div><div style="flex:1;background:var(--glass);border:1px solid var(--border);padding:12px;text-align:center;"><div style="font-family:var(--serif);font-size:24px;color:var(--muted2)">9</div><div style="font-family:var(--mono);font-size:6px;color:var(--muted);letter-spacing:2px;margin-top:2px;">COLD &lt;40</div></div></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ OUTREACH ══ -->
+  <div class="pg" id="pg-ou">
+    <div class="inner-pg">
+      <div class="ph rv"><div><div class="ph-eye">System 03</div><div class="ph-title">Outreach <em>Engine</em></div><div class="ph-desc">Claude writes a personalized email per lead referencing exact gaps found. 2-3× reply rates.</div></div><div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="btn btn-g" onclick="genEmail()">↻ Regenerate</button><button class="btn btn-p" onclick="sn('53 emails exported to outreach_ready.csv')">↓ Export All</button></div></div>
+      <div class="g2">
+        <div class="card rv"><div class="ch"><div class="ct2"><div class="cd" style="background:var(--blue);color:var(--blue)"></div>Configuration</div></div><div class="cb"><div class="fg"><label class="fl">Offer Type</label><select class="fs"><option>AI Receptionist (missed-call text-back)</option><option>Review Automation Bot</option><option>Lead Capture + Follow-up AI</option></select></div><div class="fg"><label class="fl">CTA</label><select class="fs"><option>Free 15-min demo call</option><option>"I built this for you" demo link</option><option>Free audit PDF</option></select></div><div class="fg"><label class="fl">Tone</label><select class="fs"><option>Direct / Peer-to-peer</option><option>Friendly / Conversational</option></select></div><div style="padding-top:14px;border-top:1px solid var(--border);"><div class="tr2"><span>Reference specific audit gap</span><div class="tg on" onclick="this.classList.toggle('on')"></div></div><div class="tr2"><span>Custom first line per lead</span><div class="tg on" onclick="this.classList.toggle('on')"></div></div><div class="tr2"><span>Include ROI estimate</span><div class="tg" onclick="this.classList.toggle('on')"></div></div></div></div></div>
+        <div class="card rv"><div class="ch"><div class="ct2"><div class="cd" style="background:var(--green);color:var(--green)"></div>Generated Email Preview</div><span class="tag t-g">Ready</span></div><div class="ep"><div class="ef"><span class="ek">To</span><span class="ev">hello@acreliable.com</span></div><div class="ef"><span class="ek">From</span><span class="ev">alex@autoflowagency.com</span></div><div class="ef"><span class="ek">Subj</span><span class="ev">quick question about your missed calls</span></div><div class="eb" id="embd">Hey,<br><br>Noticed <span class="ehl">Reliable Air Conditioning has 135 five-star reviews</span> — clearly a serious operation.<br><br>One thing I caught: <span class="egp">no way to book online + 18hr form response time</span>. In HVAC, that's jobs going to whoever answers first.<br><br>Built a quick AI receptionist demo trained on your site. Want the link?<br><br>— Alex</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DEMOS ══ -->
+  <div class="pg" id="pg-dm">
+    <div class="inner-pg">
+      <div class="ph rv"><div><div class="ph-eye">System 04</div><div class="ph-title">Demo <em>Builder</em></div><div class="ph-desc">"I built this for you" — highest-converting outreach. Scrapes their site, trains AI, deploys live link.</div></div><button class="btn btn-p" onclick="sn('Demo builder initializing...')">▶ Build Demo</button></div>
+      <div class="dg"><div class="dc rv"><div class="de">📞</div><div class="dt">AI Receptionist</div><div class="dd">Vapi voice bot trained on their services. Answers calls 24/7, books jobs, handles FAQs.</div><span class="tag t-b">Vapi · Retell</span></div><div class="dc rv" style="transition-delay:.06s"><div class="de">💬</div><div class="dt">Missed-Call Text-Back</div><div class="dd">Instant SMS when a call is missed. Captures the lead before they dial a competitor.</div><span class="tag t-a">Twilio · Make</span></div><div class="dc rv" style="transition-delay:.12s"><div class="de">⭐</div><div class="dt">Review Reply Bot</div><div class="dd">Auto-replies to Google reviews in their voice. Flags negatives for human review.</div><span class="tag t-g">Claude API</span></div><div class="dc rv" style="transition-delay:.18s"><div class="de">🤖</div><div class="dt">FAQ Chatbot</div><div class="dd">Trained on their website content in minutes. Copy-paste embed code included.</div><span class="tag t-v">RAG · Claude</span></div><div class="dc rv" style="transition-delay:.24s"><div class="de">🎯</div><div class="dt">Lead Qualifier</div><div class="dd">Qualifies inbound leads via SMS. Books only ready buyers on the calendar.</div><span class="tag t-b">n8n · Cal.com</span></div><div class="dc rv" style="transition-delay:.3s;border-style:dashed;opacity:.4;"><div class="de">＋</div><div class="dt">Custom Demo</div><div class="dd">Build a bespoke automation for a specific prospect's unique workflow.</div><span class="tag" style="border:1px solid var(--border);color:var(--muted)">Custom</span></div></div>
+      <div class="card rv"><div class="ch"><div class="ct2"><div class="cd" style="background:var(--green);color:var(--green)"></div>Deploy Log</div></div><div class="term"><span class="t-gn">✓</span> <span class="t-mt">[10:42]</span> <span class="t-wh">AI Chatbot → Reliable Air Conditioning</span> <span class="t-mt">— live: 204.48.18.12:5000/demo/reliable-ac</span>
+<span class="t-gn">✓</span> <span class="t-mt">[09:18]</span> <span class="t-wh">AI Receptionist → Flow-Tech AC</span> <span class="t-mt">— Vapi agent active</span>
+<span class="t-gn">✓</span> <span class="t-mt">[09:02]</span> <span class="t-wh">FAQ Chatbot → Coolest AC</span> <span class="t-mt">— trained on 14 pages</span>
+<span class="t-am">⟳</span> <span class="t-mt">[NOW]  </span> <span class="t-wh">Missed-Call Text-Back → 2 prospects</span> <span class="t-mt">— queued</span></div></div>
+    </div>
+  </div>
+
+  <!-- ══ CRM ══ -->
+  <div class="pg" id="pg-cr">
+    <div class="inner-pg">
+      <div class="ph rv"><div><div class="ph-eye">System 05</div><div class="ph-title">CRM <em>Pipeline</em></div><div class="ph-desc">Gmail sync, auto intent tagging, follow-up drafting, Cal.com booking — automated.</div></div><button class="btn btn-p" onclick="sn('Syncing inbox via Gmail API...')">⟳ Sync Inbox</button></div>
+      <div class="sg"><div class="sc rv"><div class="sc-lbl">New Replies</div><div class="sc-val" style="font-size:30px;color:var(--blue2)"><span class="cnt" data-to="7">0</span></div><div class="sc-sub">Today · 4 interested</div></div><div class="sc rv"><div class="sc-lbl">Active Deals</div><div class="sc-val" style="font-size:30px;color:var(--green)"><span class="cnt" data-to="18">0</span></div><div class="sc-sub">In pipeline</div></div><div class="sc rv"><div class="sc-lbl">Proposals Sent</div><div class="sc-val" style="font-size:30px;color:var(--amber)"><span class="cnt" data-to="4">0</span></div><div class="sc-sub">$32,400 value</div></div><div class="sc rv"><div class="sc-lbl">Won This Month</div><div class="sc-val" style="font-size:30px;color:#C4A3FF"><span class="cnt" data-to="2">0</span></div><div class="sc-sub">$4,200 MRR</div></div></div>
+      <div class="card rv"><div class="ch"><div class="ct2"><div class="cd" style="background:var(--blue);color:var(--blue)"></div>Deal Pipeline</div></div><div class="tw"><table><thead><tr><th>Prospect</th><th>Stage</th><th>Last Signal</th><th>Next Action</th><th>Value</th><th></th></tr></thead><tbody><tr><td><div style="font-weight:600;font-size:12px;color:var(--text)">Reliable Air Conditioning</div><div style="font-family:var(--mono);font-size:7px;color:var(--muted)">HVAC · Miami FL</div></td><td><span class="tag t-a">Call Booked</span></td><td style="font-size:11px;color:var(--muted2)">"Sounds interesting"</td><td style="font-family:var(--mono);font-size:9px;color:var(--blue2)">Tomorrow 2pm</td><td style="font-family:var(--mono);font-size:11px;color:var(--green)">$2,400/mo</td><td><button class="btn btn-g" style="font-size:7px;padding:5px 10px;" onclick="sn('Generating proposal...')">Proposal</button></td></tr><tr><td><div style="font-weight:600;font-size:12px;color:var(--text)">Flow-Tech AC</div><div style="font-family:var(--mono);font-size:7px;color:var(--muted)">HVAC · Miami FL</div></td><td><span class="tag t-b">Interested</span></td><td style="font-size:11px;color:var(--muted2)">"What does it cost?"</td><td style="font-family:var(--mono);font-size:9px;color:var(--blue2)">Send pricing</td><td style="font-family:var(--mono);font-size:11px;color:var(--green)">$1,800/mo</td><td><button class="btn btn-g" style="font-size:7px;padding:5px 10px;" onclick="sn('Drafting follow-up...')">Follow-up</button></td></tr><tr><td><div style="font-weight:600;font-size:12px;color:var(--text)">Coolest AC</div><div style="font-family:var(--mono);font-size:7px;color:var(--muted)">HVAC · Miami FL</div></td><td><span class="tag t-v">Proposal Sent</span></td><td style="font-size:11px;color:var(--muted2)">Opened 3×</td><td style="font-family:var(--mono);font-size:9px;color:var(--amber)">Follow up in 2 days</td><td style="font-family:var(--mono);font-size:11px;color:var(--green)">$3,200/mo</td><td><button class="btn btn-p" style="font-size:7px;padding:5px 12px;" onclick="sn('Sending follow-up...')">Send</button></td></tr></tbody></table></div></div>
+    </div>
+  </div>
+
+  <!-- ══ INTENT ══ -->
+  <div class="pg" id="pg-in">
+    <div class="inner-pg">
+      <div class="ph rv"><div><div class="ph-eye">System 06</div><div class="ph-title">Intent <em>Signals</em></div><div class="ph-desc">Daily Reddit, Indeed, LinkedIn monitoring for businesses posting buying signals.</div></div><button class="btn btn-p" onclick="sn('Refreshing signal feed...')">⟳ Refresh</button></div>
+      <div class="sg"><div class="sc rv"><div class="sc-lbl">Hot Signals Today</div><div class="sc-val" style="font-size:30px;color:var(--rose)"><span class="cnt" data-to="12">0</span></div><div class="sc-sub">↑ 4 vs yesterday</div></div><div class="sc rv"><div class="sc-lbl">Sources Active</div><div class="sc-val" style="font-size:30px;color:var(--blue2)"><span class="cnt" data-to="6">0</span></div><div class="sc-sub">Reddit · Indeed · LinkedIn</div></div><div class="sc rv"><div class="sc-lbl">Signal Reply Rate</div><div class="sc-val" style="font-size:30px;color:var(--green)">18%</div><div class="sc-sub">vs 4.8% cold</div></div><div class="sc rv"><div class="sc-lbl">Converted This Month</div><div class="sc-val" style="font-size:30px;color:var(--amber)"><span class="cnt" data-to="3">0</span></div><div class="sc-sub">From signals</div></div></div>
+      <div class="ii hot rv"><div class="ii-ico">🔥</div><div style="flex:1;"><div class="ii-src">Indeed · 2 hours ago · HVAC · Tampa FL</div><div class="ii-txt">Sunrise HVAC hiring a "front desk receptionist to answer phones and schedule appointments Monday–Friday 8am–6pm"</div><div class="ii-p">→ Paying $35k/yr for a human to do what AI does for $500/mo. Perfect pitch window.</div></div><button class="btn btn-p" style="align-self:center;font-size:7px;padding:8px 12px;flex-shrink:0;" onclick="sn('Drafting personalized outreach...')">Outreach</button></div>
+      <div class="ii hot rv"><div class="ii-ico">🔥</div><div style="flex:1;"><div class="ii-src">Reddit r/smallbusiness · 5 hours ago</div><div class="ii-txt">"I run a landscaping company and I miss so many calls while we're on job sites. Anyone found a solution?"</div><div class="ii-p">→ Explicit pain point, no solution yet. Perfect window to reply with a demo link.</div></div><button class="btn btn-p" style="align-self:center;font-size:7px;padding:8px 12px;flex-shrink:0;" onclick="sn('Drafting Reddit DM...')">DM Now</button></div>
+      <div class="ii rv"><div class="ii-ico">⚡</div><div style="flex:1;"><div class="ii-src">Facebook "Roofing Business Owners" · 1 day ago</div><div class="ii-txt">"Getting 40+ DMs a day from leads and I literally cannot keep up. Anyone using tools for this?"</div><div class="ii-p">→ Overwhelmed with demand. High urgency. Needs automation immediately.</div></div><button class="btn btn-g" style="align-self:center;font-size:7px;padding:8px 12px;flex-shrink:0;" onclick="sn('Added to outreach queue.')">Queue</button></div>
+    </div>
+  </div>
+
+  <!-- ══ ASSETS ══ -->
+  <div class="pg" id="pg-as">
+    <div class="inner-pg">
+      <div class="ph rv"><div><div class="ph-eye">System 07</div><div class="ph-title">Proof <em>Assets</em></div><div class="ph-desc">ROI calculator, Loom scripts, audit PDFs. Personalized per prospect. Close deals with data.</div></div></div>
+      <div class="tabs"><div class="tab on" onclick="stab(this,'roi')">ROI Calculator</div><div class="tab" onclick="stab(this,'loom')">Loom Script</div><div class="tab" onclick="stab(this,'pdf')">Audit PDF</div></div>
+      <div class="tp on" id="tp-roi">
+        <div class="g2">
+          <div class="card rv"><div class="ch"><div class="ct2"><div class="cd" style="background:var(--blue);color:var(--blue)"></div>Input Parameters</div></div><div class="cb" style="padding:0 18px;"><div class="sld-r"><div class="sld-l">Missed calls / month</div><input type="range" min="5" max="500" value="80" oninput="cROI()" id="rc"><div class="sld-v" id="vc">80</div></div><div class="sld-r"><div class="sld-l">Average job value</div><input type="range" min="100" max="5000" step="50" value="450" oninput="cROI()" id="rj"><div class="sld-v" id="vj">$450</div></div><div class="sld-r"><div class="sld-l">Close rate</div><input type="range" min="5" max="80" value="30" oninput="cROI()" id="rcl"><div class="sld-v" id="vcl">30%</div></div><div class="sld-r" style="border-bottom:none;"><div class="sld-l">AI recovery rate</div><input type="range" min="20" max="80" value="55" oninput="cROI()" id="rr"><div class="sld-v" id="vr">55%</div></div></div></div>
+          <div class="card rv"><div class="ch"><div class="ct2"><div class="cd" style="background:var(--green);color:var(--green)"></div>Revenue Recovered</div></div><div class="cb"><div class="roi-box"><div class="roi-big" id="roim">$5,940</div><div class="roi-lbl">Recovered Revenue / Month</div><div class="roi-g"><div class="roi-m"><div class="roi-mn" id="roia">$71,280</div><div class="roi-ml">Annual Recovery</div></div><div class="roi-m"><div class="roi-mn" id="roir" style="color:var(--green)">9.9×</div><div class="roi-ml">ROI on $600/mo</div></div></div></div><button class="btn btn-p" style="width:100%;justify-content:center;margin-top:14px;" onclick="sn('ROI report PDF generated!')">↓ Generate PDF Report</button></div></div>
+        </div>
+      </div>
+      <div class="tp" id="tp-loom">
+        <div class="g2">
+          <div class="card rv"><div class="ch"><div class="ct2"><div class="cd" style="background:var(--blue);color:var(--blue)"></div>Script Config</div></div><div class="cb"><div class="fg"><label class="fl">Business Name</label><input class="fi" value="Reliable Air Conditioning"></div><div class="fg"><label class="fl">Top Gap Found</label><input class="fi" value="No chatbot + 18hr form response time"></div><div class="fg"><label class="fl">Demo Built</label><select class="fs"><option>AI Receptionist</option><option>Missed-Call Text-Back</option></select></div><button class="btn btn-p" onclick="sn('60-second Loom script generated!')">▶ Generate Script</button></div></div>
+          <div class="card rv"><div class="ch"><div class="ct2"><div class="cd" style="background:var(--blue);color:var(--blue)"></div>Generated Script</div></div><div class="lb"><span class="lts">[0:00]</span> "Hey — I spent 20 minutes on your site today."
+
+<span class="lts">[0:08]</span> "135 five-star reviews. Clearly doing something right. But when I submitted your contact form at 9pm — nothing until morning."
+
+<span class="lts">[0:18]</span> "So I built you something. A live AI receptionist — trained on YOUR services."
+
+<span class="lts">[0:28]</span> "[DEMO: Call the number. AI picks up. Books a job.]"
+
+<span class="lts">[0:42]</span> "Every missed call becomes a booked job. 24/7."
+
+<span class="lts">[0:52]</span> "Live in 48 hours. Want to hop on a quick call?"</div></div>
+        </div>
+      </div>
+      <div class="tp" id="tp-pdf">
+        <div class="card rv"><div class="ch"><div class="ct2"><div class="cd" style="background:var(--blue);color:var(--blue)"></div>Audit PDF — Reliable Air Conditioning</div><button class="btn btn-p" style="font-size:7px;padding:7px 12px;" onclick="sn('Generating audit PDF...')">↓ Generate PDF</button></div><div class="cb"><div style="background:rgba(255,255,255,.01);border:1px solid var(--border);padding:24px;"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px;"><div><div style="font-family:var(--mono);font-size:7px;color:var(--blue);letter-spacing:3px;margin-bottom:6px;">AUTOFLOW AGENCY · AUTOMATION AUDIT</div><div style="font-family:var(--serif);font-size:22px;color:var(--text)">Reliable Air Conditioning</div><div style="font-family:var(--mono);font-size:8px;color:var(--muted);margin-top:3px;">acreliable.com · April 2026</div></div><div style="text-align:center;background:rgba(255,94,125,.08);border:1px solid rgba(255,94,125,.15);padding:14px 18px;"><div style="font-family:var(--serif);font-size:38px;color:var(--rose);line-height:1;">92</div><div style="font-family:var(--mono);font-size:6px;color:var(--muted);letter-spacing:2px;">SCORE / 100</div></div></div></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- end .ct -->
+</div><!-- end .main -->
+</div><!-- end .shell -->
+
+<div class="nf" id="nf"></div>
+
+<script>
+/* ─── PARTICLE CANVAS ─── */
+const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d');
+let W,H,particles=[];
+function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+resize();window.addEventListener('resize',resize);
+class Particle{constructor(){this.reset();}reset(){this.x=Math.random()*W;this.y=Math.random()*H;this.vx=(Math.random()-.5)*.25;this.vy=(Math.random()-.5)*.25;this.r=Math.random()*1.1+.2;this.alpha=Math.random()*.35+.08;this.color=Math.random()>.5?'99,130,255':'155,109,255';}update(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>W||this.y<0||this.y>H)this.reset();}draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.fillStyle=`rgba(${this.color},${this.alpha})`;ctx.fill();}}
+for(let i=0;i<70;i++)particles.push(new Particle());
+function drawLines(){for(let i=0;i<particles.length;i++){for(let j=i+1;j<particles.length;j++){const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<110){ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);ctx.strokeStyle=`rgba(99,130,255,${.07*(1-d/110)})`;ctx.lineWidth=.4;ctx.stroke();}}}}
+(function animP(){ctx.clearRect(0,0,W,H);particles.forEach(p=>{p.update();p.draw();});drawLines();requestAnimationFrame(animP);})();
+
+/* ─── SCROLL PROGRESS ─── */
+window.addEventListener('scroll',()=>{const s=document.documentElement,tot=s.scrollHeight-s.clientHeight,pct=tot>0?s.scrollTop/tot*100:0;document.getElementById('spfill').style.width=pct+'%';});
+
+/* ─── CLOCK ─── */
+function tick(){const n=new Date();document.getElementById('clk').textContent=n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});}
+setInterval(tick,1000);tick();
+
+/* ─── NAVIGATION ─── */
+const pnames={ov:'Overview',sc:'Lead Scraper',au:'Site Auditor',ou:'Outreach Engine',dm:'Demo Builder',cr:'CRM Pipeline',in:'Intent Signals',as:'Proof Assets'};
+function nav(el,id){
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('pg-'+id).classList.add('on');
+  document.getElementById('tbpg').textContent=pnames[id]||id;
+  window.scrollTo(0,0);
+  if(id!=='ov')setTimeout(()=>revealInner(),50);
+  if(id==='ov')setTimeout(()=>initMetricsBandObserver(),100);
+}
+
+/* ─── INNER PAGE REVEAL ─── */
+function revealInner(){
+  const io=new IntersectionObserver(entries=>{
+    entries.forEach((e,i)=>{
+      if(e.isIntersecting){
+        setTimeout(()=>{e.target.classList.add('vis');e.target.querySelectorAll('.cnt[data-to]').forEach(c=>animCount(c));},i*55);
+        io.unobserve(e.target);
+      }
+    });
+  },{threshold:.1});
+  document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+}
+
+/* ─── ANIMATED COUNTER ─── */
+function animCount(el,targetOverride){
+  const target=targetOverride!==undefined?targetOverride:+el.dataset.to;
+  const dur=1400,start=performance.now();
+  const cur=+el.textContent||0;
+  function step(now){
+    const t=Math.min((now-start)/dur,1),ease=1-Math.pow(1-t,3);
+    el.textContent=Math.round(cur+(target-cur)*ease);
+    if(t<1)requestAnimationFrame(step);
+    else el.textContent=target;
+  }
+  requestAnimationFrame(step);
+}
+
+/* ─── METRICS BAND — scroll-triggered counters ─── */
+let metricsBandObserved=false;
+function initMetricsBandObserver(){
+  if(metricsBandObserved)return;
+  const band=document.getElementById('metricsBand');
+  if(!band)return;
+  const io=new IntersectionObserver(entries=>{
+    if(entries[0].isIntersecting){
+      metricsBandObserved=true;
+      document.querySelectorAll('#metricsBand .cnt[data-to]').forEach(c=>animCount(c));
+      io.disconnect();
+    }
+  },{threshold:.2});
+  io.observe(band);
+}
+// Also run for hero counters on load
+setTimeout(()=>{
+  document.querySelectorAll('#pg-ov .lp-stat .cnt[data-to]').forEach(c=>animCount(c));
+  initMetricsBandObserver();
+},600);
+
+/* ─── LIVE DATA SIMULATION (simulates real-time backend) ─── */
+const liveData={leads:53,hot:28,calls:18,pipeline:32400};
+function formatPipe(v){return v>=1000?'$'+Math.round(v/1000)+'K':'$'+v;}
+function updateLiveData(){
+  // Random small increments simulating live data
+  const r=Math.random();
+  if(r<.3&&liveData.leads<80){liveData.leads+=1;syncLiveMetric('leads',liveData.leads);}
+  else if(r<.5&&liveData.hot<40){liveData.hot+=1;syncLiveMetric('hot',liveData.hot);}
+  else if(r<.65){liveData.pipeline+=Math.round((Math.random()*500+100)/100)*100;syncPipeline();}
+}
+function syncLiveMetric(key,val){
+  const elMap={leads:['mb-leads','hero-leads'],hot:['mb-hot','hero-hot']};
+  (elMap[key]||[]).forEach(id=>{const el=document.getElementById(id);if(el)animCount(el,val);});
+}
+function syncPipeline(){
+  const v=liveData.pipeline;
+  const f=formatPipe(v);
+  const full='$'+v.toLocaleString();
+  ['hero-pipe-val','mb-pipe','banner-pipe'].forEach(id=>{const el=document.getElementById(id);if(el){const isShort=id==='hero-pipe-val'||id==='mb-pipe'||id==='banner-pipe';el.textContent=isShort?f:full;}});
+  document.getElementById('tb-pipe').textContent='$'+v.toLocaleString();
+  // Update pipeline live box
+  const plbEl=document.getElementById('plb-pipeline');
+  if(plbEl)plbEl.textContent=f;
+}
+setInterval(updateLiveData,7000);
+
+/* ─── MINI BARS ─── */
+function buildMiniBar(id,color,data){
+  const el=document.getElementById(id);if(!el)return;
+  el.innerHTML='';
+  data.forEach(v=>{const b=document.createElement('div');b.className='mini-bar';b.style.cssText=`height:${v}%;background:${color};`;el.appendChild(b);});
+}
+const barD=[[30,45,40,60,55,70,85],[20,35,28,50,42,60,75],[15,25,30,40,35,55,65],[25,40,35,55,50,68,80]];
+const barC=['rgba(139,163,255,.45)','rgba(255,94,125,.45)','rgba(0,245,160,.45)','rgba(196,163,255,.45)'];
+['mb1','mb2','mb3','mb4'].forEach((id,i)=>buildMiniBar(id,barC[i],barD[i]));
+// Hero chart
+(function(){const el=document.getElementById('heroChart');if(!el)return;const d=[40,55,48,70,62,80,90];const c=['rgba(139,163,255,.2)','rgba(139,163,255,.25)','rgba(139,163,255,.22)','rgba(139,163,255,.35)','rgba(139,163,255,.3)','rgba(139,163,255,.45)','rgba(0,245,160,.6)'];d.forEach((v,i)=>{const b=document.createElement('div');b.className='mini-bar';b.style.cssText=`height:${v}%;background:${c[i]};`;el.appendChild(b);});})();
+
+/* ─── LIVE FEED ROTATION ─── */
+const feedItems=[
+  {ico:'🔥',bg:'rgba(255,94,125,.1)',border:'rgba(255,94,125,.2)',color:'#FF8FA8',meta:'Indeed · just now',text:'Sunrise HVAC — hiring receptionist',badge:'HOT',bBg:'rgba(255,94,125,.1)',bC:'#FF8FA8'},
+  {ico:'⭐',bg:'rgba(0,245,160,.06)',border:'rgba(0,245,160,.2)',color:'#00F5A0',meta:'CRM · Reply',text:'Reliable AC — "What does it cost?"',badge:'REPLY',bBg:'rgba(0,245,160,.08)',bC:'#00F5A0'},
+  {ico:'📞',bg:'rgba(99,130,255,.1)',border:'rgba(99,130,255,.2)',color:'#8BA3FF',meta:'Demo · 3min',text:'AI Receptionist deployed — Flow-Tech',badge:'LIVE',bBg:'rgba(99,130,255,.12)',bC:'#8BA3FF'},
+  {ico:'⚡',bg:'rgba(255,184,77,.08)',border:'rgba(255,184,77,.2)',color:'#FFB84D',meta:'Reddit · 8min',text:'Landscaping Co — "miss calls daily"',badge:'SIGNAL',bBg:'rgba(255,184,77,.08)',bC:'#FFB84D'},
+  {ico:'🎯',bg:'rgba(0,229,255,.08)',border:'rgba(0,229,255,.2)',color:'#00E5FF',meta:'Auditor · 14min',text:'Miami Plumbing — Score 92 — 4 gaps',badge:'HOT',bBg:'rgba(0,229,255,.08)',bC:'#00E5FF'},
+];
+let fi=0;
+setInterval(()=>{
+  const feed=document.getElementById('liveFeed');if(!feed)return;
+  const item=feedItems[fi%feedItems.length];
+  const div=document.createElement('div');
+  div.className='feed-item feed-new';
+  div.innerHTML=`<div class="feed-ico" style="background:${item.bg};border:1px solid ${item.border};color:${item.color};">${item.ico}</div><div style="flex:1;"><div class="feed-meta">${item.meta}</div><div class="feed-text">${item.text}</div></div><div class="feed-badge" style="background:${item.bBg};color:${item.bC};border:1px solid ${item.border};">${item.badge}</div>`;
+  feed.insertBefore(div,feed.firstChild);
+  const its=feed.querySelectorAll('.feed-item');
+  if(its.length>4)its[its.length-1].remove();
+  fi++;
+},4500);
+
+/* ─── SCRAPER ─── */
+let srun=false;
+function runScraper(){
+  if(srun)return;srun=true;
+  const log=document.getElementById('slog');
+  const niches=document.getElementById('sn').value,cities=document.getElementById('sc2').value;
+  log.innerHTML='<span class="t-bl">$</span> <span class="t-mt">Initializing...\nConnecting: Google Maps + Yelp Fusion\n</span>';
+  const ns=niches.split(',').map(s=>s.trim()),cs=cities.split(',').map(s=>s.trim());
+  const pairs=ns.flatMap(n=>cs.map(c=>[n,c]));
+  let i=0;
+  const iv=setInterval(()=>{
+    if(i>=pairs.length){clearInterval(iv);srun=false;log.innerHTML+='<span class="t-gn">✓ COMPLETE — leads.csv ready</span>\n';log.scrollTop=9999;sn('Scrape complete. leads.csv ready.');return;}
+    const[n,c]=pairs[i];
+    const g=Math.floor(Math.random()*14)+5,y=Math.floor(Math.random()*10)+4;
+    log.innerHTML+='<span class="t-bl">$</span> <span class="t-wh">'+n+' in '+c+'</span>\n  <span class="t-gn">Google:'+g+'</span>  <span class="t-am">Yelp:'+y+'</span>\n';
+    log.scrollTop=9999;i++;
+  },480);
+}
+
+/* ─── AUDIT ─── */
+function runAudit(){
+  const bar=document.getElementById('abar'),pct=document.getElementById('apct');
+  bar.style.width='0%';let w=0;
+  const iv=setInterval(()=>{w=Math.min(w+Math.random()*3.5,100);bar.style.width=w.toFixed(0)+'%';pct.textContent=Math.round(53*w/100)+' / 53';if(w>=100){clearInterval(iv);sn('Audit complete. 53/53 sites scored.');}},200);
+}
+
+/* ─── EMAIL ─── */
+const emails=[
+  `Hey,<br><br>Noticed <span class="ehl">Reliable Air Conditioning has 135 five-star reviews</span> — clearly a serious operation.<br><br>One thing I caught: <span class="egp">no way to book online + 18hr form response time</span>. In HVAC, that's jobs going to whoever answers first.<br><br>Built a quick AI receptionist demo trained on your site. Want the link?<br><br>— Alex`,
+  `Hey,<br><br>Quick one — <span class="ehl">135 Google reviews at 4.5 stars</span>. You're running something real.<br><br>But: <span class="egp">no online booking and an 18-hour response window</span>. In HVAC that gap costs jobs.<br><br>Built you a demo. Took an hour. Want the link?<br><br>— Alex`,
+  `Hey,<br><br><span class="ehl">135 reviews at 4.5 stars</span> — that's serious traction.<br><br>Spotted: <span class="egp">no way to book or respond after hours</span>. Competitors with AI fill that gap every night.<br><br>I have a live demo built for HVAC. Want to see it?<br><br>— Alex`
+];
+function genEmail(){document.getElementById('embd').innerHTML=emails[Math.floor(Math.random()*emails.length)];}
+
+/* ─── ROI ─── */
+function cROI(){
+  const c=+document.getElementById('rc').value,j=+document.getElementById('rj').value,cl=+document.getElementById('rcl').value/100,r=+document.getElementById('rr').value/100;
+  document.getElementById('vc').textContent=c;
+  document.getElementById('vj').textContent='$'+j;
+  document.getElementById('vcl').textContent=Math.round(cl*100)+'%';
+  document.getElementById('vr').textContent=Math.round(r*100)+'%';
+  const m=Math.round(c*r*cl*j);
+  document.getElementById('roim').textContent='$'+m.toLocaleString();
+  document.getElementById('roia').textContent='$'+(m*12).toLocaleString();
+  document.getElementById('roir').textContent=(m/600).toFixed(1)+'×';
+}
+cROI();
+
+/* ─── TABS ─── */
+function stab(el,id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.tp').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');document.getElementById('tp-'+id).classList.add('on');
+}
+
+/* ─── CSV ─── */
+function dlCSV(){
+  const csv='business_name,niche,city,website,phone,rating,reviews\nReliable Air Conditioning,HVAC,Miami FL,acreliable.com,(305) 325-9283,4.5,135\nFlow-Tech AC,HVAC,Miami FL,flowtechac.com,(305) 442-1199,4.7,89';
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='leads.csv';a.click();
+  sn('leads.csv downloaded.');
+}
+
+/* ─── NOTIFICATION ─── */
+let nt;
+function sn(msg){const n=document.getElementById('nf');n.textContent='◈  '+msg;n.classList.add('show');clearTimeout(nt);nt=setTimeout(()=>n.classList.remove('show'),3500);}
+
+/* ─── PIPELINE LIVE BOX — simulated state transitions ─── */
+function updatePipelineBox(){
+  const hot=liveData.hot,warm=Math.max(16-Math.floor((hot-28)/3),10);
+  const pipe=liveData.pipeline;
+  const hotEl=document.getElementById('plb-hot');
+  const pipeEl=document.getElementById('plb-pipeline');
+  const bar2=document.getElementById('plb-bar2');
+  if(hotEl)hotEl.textContent=hot;
+  if(pipeEl)pipeEl.textContent=formatPipe(pipe);
+  if(bar2)bar2.style.width=Math.min(hot/40*100,100)+'%';
+  const bar1=document.getElementById('plb-bar1');
+  if(bar1)bar1.style.width=Math.min(pipe/40000*100,100)+'%';
+}
+setInterval(updatePipelineBox,7500);
+</script>
+</body>
+</html>
